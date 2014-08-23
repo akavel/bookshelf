@@ -4,7 +4,7 @@
  * `adb devices` - lists all available devices (emulators and real ones connected)
  * `emulator -avd $EMULATOR_NAME &` - start emulator $EMULATOR_NAME
  * `adb [-s $DEVICE_ID] install -r bin/$APP_NAME-debug.apk` - install app on device $DEVICE_ID; `-r` forces reinstall
- * `adb [-s $DEVICE_ID] shell am start -S -D -n com.package.$APP_NAME/.ActivityName` - start app; `-S` forces stop before starting; `-D` enables debugging reportedly
+ * `adb [-s $DEVICE_ID] shell am start [-S] [-D] -n com.package.$APP_NAME/.ActivityName` - start app; `-S` forces stop before starting; `-D` enables debugging reportedly
  * `adb logcat` - shows some debugging info
  * `ddms` [?] - Dalvik Debug Monitor Service
  * see [stackoverflow for how to try stopping an app](http://stackoverflow.com/q/3117095/98528)
