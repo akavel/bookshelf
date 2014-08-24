@@ -1,5 +1,8 @@
 (require 'android-defs)
 
+(define-alias Override java.lang.Override)
+
+(define-alias ViewGroup android.view.ViewGroup)
 (define-alias LayoutParams android.view.ViewGroup$LayoutParams)
 (define-alias MarginLayoutParams android.view.ViewGroup$MarginLayoutParams)
 (define-alias LinearLayoutParams android.widget.LinearLayout$LayoutParams)
@@ -7,6 +10,7 @@
 (define-alias ViewPager android.support.v4.view.ViewPager)
 (define-alias Typeface android.graphics.Typeface)
 (define-alias Gravity android.view.Gravity)
+(define-alias Log android.util.Log)
 
 (define-constant ID_CLIPBOARD ::int 101)
 (define-constant ID_SHELVES ::int 102)
@@ -29,6 +33,8 @@
     (set! book book_)
     (orientation (this) LinearLayout:VERTICAL)
     (layout-params (this) (LayoutParams LayoutParams:FILL_PARENT LayoutParams:FILL_PARENT))
+    
+    (Log:i "MC" "new BookView()")
     
     ((this):add-view (TextView
       id: ID_TITLE
@@ -63,16 +69,51 @@
       (TextView:set-text ((this):author-view) (as string (book:author)))
       (TextView:set-text ((this):path-view) (as string (book:path)))))
 )
+
+;TODO: ArrayAdapter requires a view resource ID in constructor, so it seems I must move BookView layout to XML
+;(define-simple-class ClipboardAdapter (android.widget.ArrayAdapter[Book])
+;  (*init* (context ::Context) (
                       
 
 (activity helloworld
   (on-create-view
+    (define clipboard-adapter (object (android.widget.BaseAdapter)
+      (books init: [(Book title: "Pan Tadeusz" author: "Adam Mickiewicz" path: "/mnt/sdcard/foo/bar/baz.epub")])
+      ((get-count @Override) ::int
+        (Log:i "MC" "get-count()")
+        (vector-length ((this):books)))
+      ((get-item @Override (i ::int)) ::Object
+        (if (>= i ((this):get-count))
+          #!null
+          (vector-ref ((this):books) i)))
+      ((get-item-id @Override (i ::int)) ::long
+        (if (>= i ((this):get-count))
+          -1
+          i))
+      ((get-item-view-type @Override (i ::int)) ::int 0)
+      ((get-view @Override (i ::int) (convertView ::View) (parent ::ViewGroup)) ::View
+        (if (>= i ((this):get-count))
+          #!null
+        (let ((book (vector-ref ((this):books) i))
+              (view (as BookView convertView)))
+        (if (not (eq? #!null view))
+          view
+        (BookView book (parent:get-context) #!null)))))
+      ((get-view-type-count @Override) ::int 1)
+      ((has-stable-ids @Override) ::boolean #t)
+      ((is-empty @Override) ::boolean
+        (= ((this):get-count) 0))
+      ((are-all-items-enabled @Override) ::boolean #t)
+      ((is-enabled @Override (i ::int)) ::boolean #t)))
+    (Log:i "MC" "helloworld:on-create-view()")
+  
     (LinearLayout
       orientation: LinearLayout:VERTICAL
       layout-params: (LayoutParams LayoutParams:FILL_PARENT LayoutParams:FILL_PARENT)
       (ListView
         id: ID_CLIPBOARD
-        layout-params: (LinearLayoutParams LayoutParams:FILL_PARENT 0 99))
+        layout-params: (LinearLayoutParams LayoutParams:FILL_PARENT 0 99)
+        adapter: clipboard-adapter)
       (ViewPager
         id: ID_SHELVES
         layout-params: (LinearLayoutParams LayoutParams:FILL_PARENT 0 0))
