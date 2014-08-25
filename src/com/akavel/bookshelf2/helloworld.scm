@@ -36,7 +36,7 @@
     
     (Log:i "MC" "new BookView()")
     
-    ((this):add-view (TextView
+    (addView (TextView
       id: ID_TITLE
       layout-params: (LayoutParams LayoutParams:WRAP_CONTENT LayoutParams:WRAP_CONTENT
         ; TODO: android:layout_marginLeft="@dimen/activity_horizontal_margin"
@@ -44,7 +44,7 @@
       text: "Title"
       ; TODO: android:textAppearance="?android:attr/textAppearanceLarge"
       typeface: (Typeface:default-from-style Typeface:BOLD)))
-    ((this):add-view (TextView
+    (addView (TextView
       id: ID_AUTHOR
       layout-params: (LayoutParams LayoutParams:WRAP_CONTENT LayoutParams:WRAP_CONTENT
         ; TODO: android:layout_marginLeft="@dimen/activity_horizontal_margin"
@@ -52,7 +52,7 @@
       text: "Author"
       ; TODO: android:textAppearance="?android:attr/textAppearanceMedium"
       ))
-    ((this):add-view (TextView
+    (addView (TextView
       id: ID_PATH
       layout-params: (LinearLayoutParams LayoutParams:WRAP_CONTENT LayoutParams:WRAP_CONTENT
         gravity: Gravity:RIGHT
@@ -75,11 +75,16 @@
 ;  (*init* (context ::Context) (
                       
 
-(activity helloworld
-  (on-create-view
+;(activity helloworld
+(define-simple-class helloworld (android.app.Activity)
+;  (on-create-view
+  ((on-create (sis ::android.os.Bundle)) ::void
+    (invoke-special android.app.Activity (this) 'onCreate sis)
     (define clipboard-adapter (object (android.widget.BaseAdapter)
       (books init: [(Book title: "Pan Tadeusz" author: "Adam Mickiewicz" path: "/mnt/sdcard/foo/bar/baz.epub")])
-      ((get-count @Override) ::int
+      ((*init*)
+        (Log:i "MC" "new clipboard-adapter()"))
+      ((getCount @Override) ::int
         (Log:i "MC" "get-count()")
         (vector-length ((this):books)))
       ((get-item @Override (i ::int)) ::Object
@@ -106,18 +111,36 @@
       ((are-all-items-enabled @Override) ::boolean #t)
       ((is-enabled @Override (i ::int)) ::boolean #t)))
     (Log:i "MC" "helloworld:on-create-view()")
-  
-    (LinearLayout
-      orientation: LinearLayout:VERTICAL
-      layout-params: (LayoutParams LayoutParams:FILL_PARENT LayoutParams:FILL_PARENT)
-      (ListView
-        id: ID_CLIPBOARD
-        layout-params: (LinearLayoutParams LayoutParams:FILL_PARENT 0 99)
-        adapter: clipboard-adapter)
-      (ViewPager
-        id: ID_SHELVES
-        layout-params: (LinearLayoutParams LayoutParams:FILL_PARENT 0 0))
-    ))
+
+;    ((this):set-content-view
+;      (LinearLayout (this)
+;        orientation: LinearLayout:VERTICAL
+;        layout-params: (LayoutParams LayoutParams:FILL_PARENT LayoutParams:FILL_PARENT)
+;        (TextView (this)
+;          text: "Foo"
+;          layout-params: (LinearLayoutParams LayoutParams:FILL_PARENT 0 99)
+;          )
+;        (TextView (this)
+;          text: "Bar"
+;          layout-params: (LinearLayoutParams LayoutParams:FILL_PARENT 0 0))
+;      )))
+    
+    (setContentView
+      (LinearLayout (this)
+        orientation: LinearLayout:VERTICAL
+        layout-params: (LayoutParams LayoutParams:FILL_PARENT LayoutParams:FILL_PARENT)
+        (ListView (this)
+          id: ID_CLIPBOARD
+          layout-params: (LinearLayoutParams LayoutParams:FILL_PARENT 0 99)
+          ;adapter: clipboard-adapter
+          )
+        (ViewPager (this)
+          id: ID_SHELVES
+          layout-params: (LinearLayoutParams LayoutParams:FILL_PARENT 0 0))
+      ))
+    ((as ListView (findViewById ID_CLIPBOARD)):setAdapter clipboard-adapter)
+    (clipboard-adapter:notifyDataSetChanged)
+    )
   ;(on-create-options-menu (menu ::android.view.Menu)
   ;  ; Inflate the menu; this adds items to the action bar if it is present.
   ;  ((get-menu-inflater):inflate
