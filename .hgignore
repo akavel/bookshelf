@@ -1,2 +1,3 @@
-regexp:bin/
-regexp:gen/
+glob:*.class
+regexp:^bin/
+regexp:^gen/
