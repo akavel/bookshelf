@@ -10,3 +10,4 @@
  * see [stackoverflow for how to try stopping an app](http://stackoverflow.com/q/3117095/98528)
  * `adb [-s $DEVICE_ID] shell pm uninstall -k com.package.$APP_NAME` - [FIXME: what is `-k`?]
    * or: `adb [-s $DEVICE_ID] uninstall com.package.$APP_NAME`
+ * `adb push FILE /sdcard/` - upload FILE to emulator's sdcard
