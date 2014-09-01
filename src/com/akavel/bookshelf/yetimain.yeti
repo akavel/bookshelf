@@ -89,18 +89,14 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 class BookView(Book book, Context context, AttributeSet attrs) extends LinearLayout(context, attrs)
-	view _ = (this as ~ViewGroup),
-	textview id = (this#findViewById(id) unsafely_as ~TextView),
+	self _ = this,
+	setText id text is number -> string -> () = (this#findViewById(id) unsafely_as ~TextView)#setText(text),
 	
-	book = book,
 	_ = (context#getSystemService(Context#LAYOUT_INFLATER_SERVICE) unsafely_as ~LayoutInflater)
-		#inflate(R$layout#layout_book, view ()),
-	titleView = textview R$id#title,
-	authorView = textview R$id#author,
-	pathView = textview R$id#path,
-	_ = if not nullptr? book then
-			titleView#setText(book#title);
-			authorView#setText(book#author);
-			pathView#setText(book#path)
+			#inflate(R$layout#layout_book, self ());
+		if not nullptr? book then
+			setText R$id#title book#title;
+			setText R$id#author book#author;
+			setText R$id#path book#path
 		fi,
 end;
