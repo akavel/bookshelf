@@ -1,0 +1,43 @@
+module com.akavel.bookshelf.yetimain;
+
+import java.util.ArrayList;
+
+import android.content.Context;
+import android.database.Cursor;
+import android.os.Bundle;
+import android.support.v4.app.FragmentActivity;
+import android.view.Menu;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
+import android.widget.ListView;
+
+import com.akavel.bookshelf.ScanBooksTask$OnProgressListener;
+
+class MainActivity extends FragmentActivity
+	void onCreate(Bundle state)
+		super#onCreate(state);
+		this#setContentView(R$layout#activity_main);
+		
+		books = new BooksStorage(this#getBaseContext());
+		
+		cursor = books#openCursor(0);
+		shelfAdapter = new BooksDataAdapter(cursor);
+		shelf = (this#findViewById(R$id#shelf2) unsafely_as ~ListView);
+		shelf#setAdapter(shelfAdapter);
+		act = this; //TODO: do I need this?
+		
+		booksScan = new ScanBooksTask();
+		class Progress extends ScanBooksTask$OnProgressListener
+			void OnProgress(int progress)
+				shelfAdapter#notifyDataSetChanged();
+				title = act#getResources()#getString(R$string#app_name) ^ ": scanned" ^ string(progress) ^ " book(s)";
+				act#setTitle(title),
+		end;
+		booksScan#setOnProgressListener(new Progress());
+		booksScan#execute([this]);
+		(),
+	boolean onCreateOptionsMenu(Menu menu)
+		this#getMenuInflater()#inflate(R$menu#main, menu);
+		true,
+end;

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="yeti_rules" default="help">
+
+	<target name="yetic-def">
+		<taskdef name="yetic" classname="yeti.lang.compiler.YetiTask"
+			classpath="libs/yeti.jar" />
+	</target>
+
+	<target name="-post-compile" depends="yetic-def">
+		<yetic srcdir="${source.absolute.dir}" destdir="${out.absolute.dir}"
+				includes="**/*.yeti"
+				preload="yeti/lang/std">
+			<classpath>
+				<!-- not sure which of the below elements are really needed... -->
+				<path location="${out.absolute.dir}" />
+				<pathelement location="${android.jar}" />
+				<fileset dir="${native.libs.absolute.dir}" includes="*.jar" />
+				<fileset dir="libs/" includes="*.jar" />
+				<pathelement path="${sdk.dir}/platforms/${target}/android.jar" />
+				<pathelement path="${out.classes.absolute.dir}" />
+			</classpath>
+		</yetic>
+	</target>
+
+</project>
