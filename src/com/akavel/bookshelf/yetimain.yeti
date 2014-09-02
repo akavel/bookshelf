@@ -1,5 +1,67 @@
 module com.akavel.bookshelf.yetimain;
 
+import android.content.Context;
+import android.util.AttributeSet;
+import android.view.LayoutInflater;
+import android.widget.LinearLayout;
+import android.widget.TextView;
+import android.database.Cursor;
+import android.database.DataSetObserver;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.BaseAdapter;
+import android.widget.ListAdapter;
+
+viewById obj id is ~android.app.Activity -> number -> ~View = obj #findViewById(id);
+viewById obj id is ~android.view.View -> number -> ~View    = obj #findViewById(id);
+
+class BookView(Book book, Context context, AttributeSet attrs) extends LinearLayout(context, attrs)
+	self _ = this,
+	setText id text is number -> string -> () = (viewById this id unsafely_as ~TextView)#setText(text),
+	
+	_ = (context#getSystemService(Context#LAYOUT_INFLATER_SERVICE) unsafely_as ~LayoutInflater)
+			#inflate(R$layout#layout_book, self ());
+		if not nullptr? book then
+			map2 setText
+				[R$id#title, R$id#author, R$id#path]
+				[book#title, book#author, book#path] |> head
+		fi,
+end;
+
+
+class BooksDataAdapter(Cursor cursor) extends BaseAdapter
+	var cursor = cursor,
+	int getCount()
+		cursor#getCount(),
+	Object getItem(int pos)
+		if cursor#moveToPosition(pos) then
+			new Book(cursor#getString(0), cursor#getString(1), cursor#getString(2))
+		fi,
+	long getItemId(int pos)
+		if cursor#moveToPosition(pos) then
+			cursor#getLong(3)
+		else
+			-1
+		fi,
+	int getItemViewType(int pos) 0,
+	View getView(int pos, View convertView, ViewGroup parent)
+		book = (this#getItem(pos) unsafely_as ~Book);
+		view = (convertView unsafely_as ~BookView);
+		if nullptr? book then
+			()
+		elif nullptr? view then
+			new BookView(book, parent#getContext(), ())
+		else
+			view
+		fi,
+	int getViewTypeCount() 1,
+	boolean hasStableIds() true,
+	boolean isEmpty()
+		this#getCount() == 0,
+	boolean areAllItemsEnabled() true,
+	boolean isEnabled(int pos) true,
+end;
+
 import java.util.ArrayList;
 
 import android.content.Context;
@@ -40,63 +102,4 @@ class MainActivity extends FragmentActivity
 	boolean onCreateOptionsMenu(Menu menu)
 		this#getMenuInflater()#inflate(R$menu#main, menu);
 		true,
-end;
-
-import android.database.Cursor;
-import android.database.DataSetObserver;
-import android.view.View;
-import android.view.ViewGroup;
-import android.widget.BaseAdapter;
-import android.widget.ListAdapter;
-
-class BooksDataAdapter(Cursor cursor) extends BaseAdapter
-	var cursor = cursor,
-	int getCount()
-		cursor#getCount(),
-	Object getItem(int pos)
-		if cursor#moveToPosition(pos) then
-			new Book(cursor#getString(0), cursor#getString(1), cursor#getString(2))
-		fi,
-	long getItemId(int pos)
-		if cursor#moveToPosition(pos) then
-			cursor#getLong(3)
-		else
-			-1
-		fi,
-	int getItemViewType(int pos) 0,
-	View getView(int pos, View convertView, ViewGroup parent)
-		book = (this#getItem(pos) unsafely_as ~Book);
-		view = (convertView unsafely_as ~BookView);
-		if nullptr? book then
-			()
-		elif nullptr? view then
-			new BookView(book, parent#getContext(), ())
-		else
-			view
-		fi,
-	int getViewTypeCount() 1,
-	boolean hasStableIds() true,
-	boolean isEmpty()
-		this#getCount() == 0,
-	boolean areAllItemsEnabled() true,
-	boolean isEnabled(int pos) true,
-end;
-
-import android.content.Context;
-import android.util.AttributeSet;
-import android.view.LayoutInflater;
-import android.widget.LinearLayout;
-import android.widget.TextView;
-
-class BookView(Book book, Context context, AttributeSet attrs) extends LinearLayout(context, attrs)
-	self _ = this,
-	setText id text is number -> string -> () = (this#findViewById(id) unsafely_as ~TextView)#setText(text),
-	
-	_ = (context#getSystemService(Context#LAYOUT_INFLATER_SERVICE) unsafely_as ~LayoutInflater)
-			#inflate(R$layout#layout_book, self ());
-		if not nullptr? book then
-			setText R$id#title book#title;
-			setText R$id#author book#author;
-			setText R$id#path book#path
-		fi,
 end;

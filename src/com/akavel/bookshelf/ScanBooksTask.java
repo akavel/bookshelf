@@ -30,12 +30,12 @@ import android.os.Environment;
 import android.text.TextUtils;
 import android.util.Log;
 
-public class ScanBooksTask extends AsyncTask<Context, Book, Void> {
+public class ScanBooksTask extends AsyncTask<Object, Book, Void> {
 	private Context context;
 
 	@Override
-	protected Void doInBackground(Context... args) {
-		context = args[0];
+	protected Void doInBackground(Object... args) {
+		context = (Context) args[0];
 
 		// FIXME: process all filesystem rooted at /
 

@@ -7,7 +7,7 @@
 	</target>
 
 	<target name="-post-compile" depends="yetic-def">
-		<yetic srcdir="${source.absolute.dir}" destdir="${out.absolute.dir}"
+		<yetic srcdir="${source.absolute.dir}" destdir="${out.classes.absolute.dir}"
 				includes="**/*.yeti"
 				preload="yeti/lang/std">
 			<classpath>
