@@ -21,6 +21,8 @@ class BookView(Book book, Context context, AttributeSet attrs) extends LinearLay
 	
 	_ = (context#getSystemService(Context#LAYOUT_INFLATER_SERVICE) unsafely_as ~LayoutInflater)
 			#inflate(R$layout#layout_book, self ());
+		(self ()) #update(book),
+	void update(Book book)
 		if not nullptr? book then
 			map2 setText
 				[R$id#title, R$id#author, R$id#path]
@@ -52,6 +54,7 @@ class BooksDataAdapter(Cursor cursor) extends BaseAdapter
 		elif nullptr? view then
 			new BookView(book, parent#getContext(), ())
 		else
+			view#update(book);
 			view
 		fi,
 	int getViewTypeCount() 1,
@@ -60,6 +63,9 @@ class BooksDataAdapter(Cursor cursor) extends BaseAdapter
 		this#getCount() == 0,
 	boolean areAllItemsEnabled() true,
 	boolean isEnabled(int pos) true,
+	
+	void requery()
+		_ = cursor#requery(),  //FIXME: this method is deprecated
 end;
 
 import java.util.ArrayList;
@@ -92,8 +98,9 @@ class MainActivity extends FragmentActivity
 		booksScan = new ScanBooksTask();
 		class Progress extends ScanBooksTask$OnProgressListener
 			void OnProgress(int progress)
+				shelfAdapter#requery();
 				shelfAdapter#notifyDataSetChanged();
-				title = act#getResources()#getString(R$string#app_name) ^ ": scanned" ^ string(progress) ^ " book(s)";
+				title = act#getResources()#getString(R$string#app_name) ^ ": scanned \(progress) book(s)";
 				act#setTitle(title),
 		end;
 		booksScan#setOnProgressListener(new Progress());

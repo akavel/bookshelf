@@ -12,7 +12,7 @@ set JAVA_HOME=c:\Program Files\Java\jdk1.6.0_38
 
 ::cmd /k
 
-call ant.bat clean
+::call ant.bat clean
 call ant.bat debug
 
 endlocal
