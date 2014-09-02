@@ -24,9 +24,9 @@ class BookView(Book book, Context context, AttributeSet attrs) extends LinearLay
 		(self ()) #update(book),
 	void update(Book book)
 		if not nullptr? book then
-			map2 setText
-				[R$id#title, R$id#author, R$id#path]
-				[book#title, book#author, book#path] |> head
+			for [pair R$id#title book#title, pair R$id#author book#author, pair R$id#path book#path] do pair:
+				setText pair.fst pair.snd
+			done
 		fi,
 end;
 
