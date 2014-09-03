@@ -3,6 +3,7 @@ module com.akavel.bookshelf.scanbooks;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
+import java.lang.Integer;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashSet;
@@ -25,128 +26,125 @@ import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.AsyncTask;
-import android.os.Build;
+import android.os.Build$VERSION;
 import android.os.Environment;
 import android.text.TextUtils;
 import android.util.Log;
 
 //TODO: switch to use yeti.xml module?
 
-DIR_SEPARATOR = Pattern#compile("/"),
-
-// Paths to all available SD-Cards in the system (include emulated)
-//
-// Warning: Hack! Based on Android source code of version 4.3 (API 18)
-// Because there is no standart way to get it.
-// TODO: Test on future Android versions 4.4+
-storageDirectories =
-	// Final set of paths
-	rv is hash<string, ()> = [:];
-	// Primary physical SD-CARD (not emulated)
-	rawExternalStorage = System#getenv("EXTERNAL_STORAGE");
-	// All Secondary SD-CARDs (all exclude primary) separated by ":"
-	rawSecondaryStoragesStr = System#getenv("SECONDARY_STORAGE");
-	// Primary emulated SD-CARD
-	rawEmulatedStorageTarget = System#getenv("EMULATED_STORAGE_TARGET");
-	if TextUtils#isEmpty(rawEmulatedStorageTarget) then
-		// Device has physical external storage; use plain paths.
-		if TextUtils#isEmpty(rawExternalStorage) then
-			// EXTERNAL_STORAGE undefined; falling back to default.
-			rv["/storage/sdcard0"] := ()
-		else
-			rv[rawExternalStorage] := ()
-		fi
-	else
-		// Device has emulated storage; external storage paths should have
-		// userId burned into them.
-		rawUserId =
-			if Build#VERSION#SDK_INT < 17 then //Build.VERSION_CODES.JELLY_BEAN_MR1
-				""
-			else
-				path = Environment#getExternalStorageDirectory()#getAbsolutePath();
-				folders = DIR_SEPARATOR#split(path); //FIXME: use yeti regexp lib
-				//lastFolder = folders[folders.length - 1];
-				lastFolder = fold (do _ b: b done) "" folders;
-				var isDigit = false;
-				try
-					java.lang.Integer#valueOf(lastFolder);
-					isDigit = true //FIXME: don't do via exceptions
-				catch NumberFormatException ignored:
-					const ()  //FIXME: do we need to call anything here for NOP ?
-				yrt;
-				if isDigit then
-					lastFolder
-				else
-					""
-				fi
-			fi;
-		// /storage/emulated/0[1,2,...]
-		if TextUtils#isEmpty(rawUserId) then
-			rv[rawEmulatedStorageTarget] := ()
-		else
-			rv[rawEmulatedStorageTarget ^ File#separator ^ string(rawUserId)]
-		fi
-	fi;
-	// Add all secondary storages
-	if not TextUtils#isEmpty(rawSecondaryStoragesStr) then
-		// All Secondary SD-CARDs splited into array
-		rawSecondaryStorages = rawSecondaryStoragesStr#split(File.pathSeparator);
-		for rawSecondaryStorages do s:
-			rv[s] := ()
-		done
-	fi
-	keys rv,
 
 {
+	// Paths to all available SD-Cards in the system (include emulated)
+	//
+	// Warning: Hack! Based on Android source code of version 4.3 (API 18)
+	// Because there is no standart way to get it.
+	// TODO: Test on future Android versions 4.4+
+	storageDirectories =
+		// Final set of paths
+		rv is hash<string, ()> = [:];
+		// Primary physical SD-CARD (not emulated)
+		rawExternalStorage = System#getenv("EXTERNAL_STORAGE");
+		// All Secondary SD-CARDs (all exclude primary) separated by ":"
+		rawSecondaryStoragesStr = System#getenv("SECONDARY_STORAGE");
+		// Primary emulated SD-CARD
+		rawEmulatedStorageTarget = System#getenv("EMULATED_STORAGE_TARGET");
+		if TextUtils#isEmpty(rawEmulatedStorageTarget) then
+			// Device has physical external storage; use plain paths.
+			if TextUtils#isEmpty(rawExternalStorage) then
+				// EXTERNAL_STORAGE undefined; falling back to default.
+				rv["/storage/sdcard0"] := ()
+			else
+				rv[rawExternalStorage] := ()
+			fi
+		else
+			// Device has emulated storage; external storage paths should have
+			// userId burned into them.
+			rawUserId =
+				if Build$VERSION#SDK_INT < 17 then //Build.VERSION_CODES.JELLY_BEAN_MR1
+					""
+				else
+					path = Environment#getExternalStorageDirectory()#getAbsolutePath();
+					folders = Pattern#compile("/")#split(path); //FIXME: use yeti regexp lib
+					//lastFolder = folders[folders.length - 1];
+					lastFolder = fold (do _ b: b done) "" folders;
+					var isDigit = false;
+					try
+						Integer#valueOf(lastFolder);
+						isDigit := true //FIXME: don't do via exceptions
+					catch NumberFormatException ignored:
+						()  //FIXME: do we need to call anything here for NOP ?
+					yrt;
+					if isDigit then
+						lastFolder
+					else
+						""
+					fi
+				fi;
+			// /storage/emulated/0[1,2,...]
+			if TextUtils#isEmpty(rawUserId) then
+				rv[rawEmulatedStorageTarget] := ()
+			else
+				rv[rawEmulatedStorageTarget ^ File#separator ^ string(rawUserId)]
+			fi
+		fi;
+		// Add all secondary storages
+		if not TextUtils#isEmpty(rawSecondaryStoragesStr) then
+			// All Secondary SD-CARDs splited into array
+			//rawSecondaryStorages = rawSecondaryStoragesStr#split(File#pathSeparator);
+			rawSecondaryStorages = strSplit File#pathSeparator rawSecondaryStoragesStr; //FIXME: escape the separator to form regexp?
+			for rawSecondaryStorages do s:
+				rv[s] := ()
+			done
+		fi;
+		keys rv,
+
 	scanBooksTask context onProgressListener =
 		class ScanBooksTask extends AsyncTask
-			dirs = storageDirectories;
-			
-			extractMetadata book =
-				Log#d("ScanBooksTask", "extracting from zip: \(book#path)");
-				zip = new ZipFile(book#path);
+			extractMetadata path is string -> ~Book =
+				_ = Log#d("ScanBooksTask", "extracting from zip: \(path)");
+				zip = new ZipFile(path);
+				var title = "";
+				var author = "";
 				try
 					xmlFactory = DocumentBuilderFactory#newInstance();
 					entries = zip#getEntries();
-					var more = true;
-					and more entries#hasMoreElements() loop (
-						entry = entries#nextElement();
-						Log#d("ScanBooksTask", "* zip entry: \(entry#getName())");
+					var more = entries#hasMoreElements();
+					more loop (
+						entry = (entries#nextElement() unsafely_as ~ZipArchiveEntry);
+						_ = Log#d("ScanBooksTask", "* zip entry: \(entry#getName())");
 						filename = new File(entry#getName())#getName();
-						if filename = "content.opf" then
+						if filename == "content.opf" then
 							doc = xmlFactory#newDocumentBuilder()#parse(zip#getInputStream(entry));
 							doc#normalize();
 							
 							ctx = JXPathContext#newContext(doc);
 							ctx#registerNamespace("dc", "http://purl.org/dc/elements/1.1/");
 							
-							title = ctx#getValue("//dc:title");
-							Log#d("ScanBooksTask", "\(book#path) - title=\(title)");
-							if not nullptr? title then
-								book#title = title#toString()
-							fi
+							title := ctx#getValue("//dc:title")#toString();
+							_ = Log#d("ScanBooksTask", "\(path) - title=\(title)");
 							
-							author = ctx#getValue("//dc:creator");
-							Log#d("ScanBooksTask", "\(book#path) - author=\(author)");
-							if not nullptr? author then
-								book#author = author#toString()
-							fi;
+							author := ctx#getValue("//dc:creator")#toString();
+							_ = Log#d("ScanBooksTask", "\(path) - author=\(author)");
 							more := false
+						else
+							more := entries#hasMoreElements()
 						fi
 					);
 				finally
 					zip#close()
-				yrt,
+				yrt;
+				new Book(title, author, path),
 			
 			var progress = 0,
 			
 			void onProgressUpdate(Object[] values)
-				db = new BooksStorage((head values) unsafely_as Context)#getWritableDatabase();
+				db = new BooksStorage(context)#getWritableDatabase();
 				try
 					db#beginTransaction();
-					for tail values do book_:
-						book = (book_ unsafely_as Book);
-						Log#d("", "Adding \(book#path)");
+					for values do book_:
+						book = (book_ unsafely_as ~Book);
+						_ = Log#d("", "Adding \(book#path)");
 						data = new ContentValues();
 						data#put(BooksStorage#AUTHOR, book#author);
 						data#put(BooksStorage#TITLE, book#title);
@@ -156,35 +154,37 @@ storageDirectories =
 							[book#path]);
 						n = cur#getCount();
 						cur#close();
-						Log#d("", " found \(n)");
+						_ = Log#d("", " found \(n)");
 						
 						if n > 0 then
-							db#update(BooksStorage#SHELVES, data, "\(BooksStorage#PATH) = ?", [book#path])
+							_ = db#update(BooksStorage#SHELVES, data, "\(BooksStorage#PATH) = ?", [book#path])
 						else
-							db#insertOrThrow(BooksStorage#SHELVES, (), data)
-						fi
+							_ = db#insertOrThrow(BooksStorage#SHELVES, (), data)
+						fi;
+						()
 					done;
 					db#setTransactionSuccessful();
-					Log#d("", "committing transaction")
+					_ = Log#d("", "committing transaction")
 				finally
 					db#endTransaction();
-					db#close
-				yrt
+					db#close()
+				yrt;
 				
-				progress := progress + values#length;
+				len array = fold (do x _: x+1 done) 0 array;
+				progress := progress + (len values);
 				onProgressListener progress,
 			
-			scan context dir =
+			scan context dir is 'a -> ~File -> () =
 				//FIXME: use yeti's `listDirectory` from yeti.lang.io
-				if dir#isDirectory then
-					Log#i("ScanBooksTask", "Scanning dir: \(dir#getAbsolutePath())");
+				if dir#isDirectory() then
+					_ = Log#i("ScanBooksTask", "Scanning dir: \(dir#getAbsolutePath())");
 					class Filter extends FileFilter
 						boolean accept(File child)
 							if child#isDirectory() then
 								true
 							else
-								Log#i("ScanBooksTask", "file: \(child#getName())");
-								child#getName()#endsWith(".epub")  //FIXME: case insensitive
+								_ = Log#i("ScanBooksTask", "file: \(child#getName())");
+								child#getName() =~ "\\.epub$"  //FIXME: case insensitive
 							fi
 					end;
 					children = dir#listFiles(new Filter());
@@ -194,22 +194,22 @@ storageDirectories =
 							scan context child
 						else
 							try
-								book = new Book("", "", child#getAbsolutePath());
-								extractMetadata context book;
-								publishProgress book
+								book = extractMetadata child#getAbsolutePath();
+								this#publishProgress([book])
 							catch Exception e:
 								e#printStackTrace();
-								Log#e("ScanBooksTask", child#getAbsolutePath(), e)
+								_ = Log#e("ScanBooksTask", child#getAbsolutePath(), e)
 							yrt
 						fi
 					done
 				fi,
 			
 			Object doInBackground(Object[] args)
-				context = (head args unsafely_as ~Context);
-				//TODO: detect if `dirs` is empty, and maybe throw exception or something; maybe use "/" ?
-				for dirs do path:
+				//TODO: detect if `storageDirectories` is empty, and maybe throw exception or something; maybe use "/" ?
+				for storageDirectories do path:
 					scan context new File(path);
 				done;
 				Log#d("ScanBooksTask", "scanning finished."),
-		end
+		end;
+		new ScanBooksTask(),
+}

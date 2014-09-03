@@ -14,6 +14,7 @@ import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
 
+load com.akavel.bookshelf.scanbooks;
 
 viewById obj id is ~android.app.Activity -> number -> ~View = obj #findViewById(id);
 viewById obj id is ~android.view.View -> number -> ~View    = obj #findViewById(id);
@@ -86,16 +87,13 @@ class MainActivity extends FragmentActivity
 		shelf#setAdapter(shelfAdapter);
 		act = this; //TODO: do I need this?
 		
-		booksScan = new ScanBooksTask();
-		class Progress extends ScanBooksTask$OnProgressListener
-			void OnProgress(int progress)
-				shelfAdapter#requery();
-				shelfAdapter#notifyDataSetChanged();
-				title = act#getResources()#getString(R$string#app_name) ^ ": scanned \(progress) book(s)";
-				act#setTitle(title),
-		end;
-		booksScan#setOnProgressListener(new Progress());
-		booksScan#execute([this]);
+		booksScan = scanBooksTask this do progress:
+			shelfAdapter#requery();
+			shelfAdapter#notifyDataSetChanged();
+			title = act#getResources()#getString(R$string#app_name) ^ ": scanned \(progress) book(s)";
+			act#setTitle(title)
+		done;
+		booksScan#execute([]);
 		(),
 	boolean onCreateOptionsMenu(Menu menu)
 		this#getMenuInflater()#inflate(R$menu#main, menu);
