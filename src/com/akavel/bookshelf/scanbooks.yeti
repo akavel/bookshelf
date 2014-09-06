@@ -18,6 +18,7 @@ load com.akavel.bookshelf.storage;
 
 //TODO: switch to use yeti.xml module?
 
+defaultForEmpty s default = if s == "" then default else s fi;
 
 {
 	// Paths to all available SD-Cards in the system (include emulated)
@@ -28,20 +29,14 @@ load com.akavel.bookshelf.storage;
 	storageDirectories =
 		// Final set of paths
 		rv is hash<string, ()> = [:];
-		// Primary physical SD-CARD (not emulated)
-		rawExternalStorage = System#getenv("EXTERNAL_STORAGE");
 		// All Secondary SD-CARDs (all exclude primary) separated by ":"
 		rawSecondaryStoragesStr = System#getenv("SECONDARY_STORAGE");
 		// Primary emulated SD-CARD
 		rawEmulatedStorageTarget = System#getenv("EMULATED_STORAGE_TARGET");
 		if rawEmulatedStorageTarget == "" then
 			// Device has physical external storage; use plain paths.
-			if rawExternalStorage == "" then
-				// EXTERNAL_STORAGE undefined; falling back to default.
-				rv["/storage/sdcard0"] := ()
-			else
-				rv[rawExternalStorage] := ()
-			fi
+			// Primary physical SD-CARD (not emulated)
+			rv[System#getenv("EXTERNAL_STORAGE") `defaultForEmpty` "/storage/sdcard0"] := ()
 		else
 			// Device has emulated storage; external storage paths should have
 			// userId burned into them.
@@ -77,7 +72,9 @@ load com.akavel.bookshelf.storage;
 			//rawSecondaryStorages = rawSecondaryStoragesStr#split(File#pathSeparator);
 			rawSecondaryStorages = strSplit File#pathSeparator rawSecondaryStoragesStr; //FIXME: escape the separator to form regexp?
 			for rawSecondaryStorages do s:
-				rv[s] := ()
+				if not (s == "") then
+					rv[s] := ()
+				fi
 			done
 		fi;
 		keys rv,
