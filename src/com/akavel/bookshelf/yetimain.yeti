@@ -83,16 +83,16 @@ class MainActivity extends FragmentActivity
 		shelfAdapter = new BooksDataAdapter(cursor);
 		shelf = (this#findViewById(R$id#shelf2) unsafely_as ~ListView);
 		shelf#setAdapter(shelfAdapter);
-		act = this; //TODO: do I need this?
 		
 		booksScan = scanBooksTask this do progress:
 			shelfAdapter#requery();
 			shelfAdapter#notifyDataSetChanged();
-			title = act#getResources()#getString(R$string#app_name) ^ ": scanned \(progress) book(s)";
-			act#setTitle(title)
+			title = this#getResources()#getString(R$string#app_name) ^ ": scanned \(progress) book(s)";
+			this#setTitle(title)
 		done;
 		booksScan#execute([]);
 		(),
+
 	boolean onCreateOptionsMenu(Menu menu)
 		this#getMenuInflater()#inflate(R$menu#main, menu);
 		true,
