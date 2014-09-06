@@ -1,0 +1,171 @@
+module com.akavel.bookshelf.tabchoicev;
+
+import android.content.Context;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.Paint$Style;
+import android.graphics.Path;
+import android.graphics.Path$Direction;
+import android.support.v4.view.MotionEventCompat;
+import android.util.AttributeSet;
+import android.view.MotionEvent;
+import android.view.View;
+import android.view.View$MeasureSpec;
+
+picW = 80;
+borderW = 20;
+picH = 80;
+strokeWidth = 3.0;
+
+class TabChoiceView(Context context, AttributeSet attrs) extends View(context, attrs)
+	var currentTab = 0,
+	
+	void onMeasure(int widthMeasureSpec, int heightMeasureSpec)
+		w =
+			if View$MeasureSpec#getMode(widthMeasureSpec) == View$MeasureSpec#UNSPECIFIED then
+				5*picW + 6*borderW
+			else
+				View$MeasureSpec#getSize(widthMeasureSpec)
+			fi;
+		h =
+ 			if 0 <= index View$MeasureSpec#getMode(heightMeasureSpec) [
+				View$MeasureSpec#UNSPECIFIED, View$MeasureSpec#AT_MOST
+			] then
+				picH
+			else
+				View$MeasureSpec#getSize(heightMeasureSpec)
+			fi;
+		this#setMeasuredDimension(w, h),
+		
+	var w = 0,
+	var h = 0,
+	
+	tabs = array [],
+	icons = array [],
+	var wUnit = 0.0,
+	
+	prepareDrawing _ =
+		wUnit := w / (5*picW + 6*borderW);
+		tab = new Path();
+		tab#moveTo(0, h - strokeWidth/2);
+		tab#lineTo(wUnit*borderW, strokeWidth/2);
+		tab#lineTo(wUnit*(borderW+picW), strokeWidth/2);
+		tab#lineTo(wUnit*(borderW+picW+borderW), h-strokeWidth/2);
+		for [0..4] do i:
+			p = new Path();
+			p#addPath(tab, i*wUnit*(borderW+picW), 0);
+			push tabs p;
+			push icons new Path()
+		done;
+		
+		arm = (min h wUnit*picW)*0.7/2;
+		midy = h/2;
+		
+		// icon 1/5: star
+		var midx = wUnit*(borderW+picW/2);
+		(
+			arms = 6;
+			for [0 .. arms-1] do i:
+				angle = i*pi*2/arms;
+				icons[0]#moveTo(midx, midy);
+				icons[0]#rLineTo(arm*(cos angle), arm*(sin angle));
+				//icons[0].lineTo(midx+arm*Math.cos(angle), midy)
+			done
+		);
+		
+		// icon 2/5: circle
+		midx := midx + wUnit*(borderW+picW);
+		(
+			icons[1]#addCircle(midx, midy, arm, Path$Direction#CCW)
+		);
+		
+		// icon 3/5: triangle
+		midx := midx + wUnit*(borderW+picW);
+		(
+			h = 2*arm * (sqrt 3)/2;
+			icons[2]#moveTo(midx, midy-arm);
+			icons[2]#rLineTo(arm, h);
+			icons[2]#rLineTo(-2*arm, 0);
+			icons[2]#close()
+		);
+		
+		// icon 4/5: square
+		midx := midx + wUnit*(borderW+picW);
+		(
+			arm2 = arm*0.8;
+			icons[3]#addRect(midx-arm2, midy-arm2, midx+arm2, midy+arm2, Path$Direction#CCW)
+		);
+		
+		// icon 5/5: slash
+		midx := midx + wUnit*(borderW+picW);
+		(
+			dx = arm*0.7;
+			dy = arm*0.9;
+			icons[4]#moveTo(midx-dx, midy+dy);
+			icons[4]#lineTo(midx+dx, midy-dy);
+		),
+	
+	void onSizeChanged(int w_, int h_, int oldw, int oldh)
+		w := w_;
+		h := h_;
+		prepareDrawing (),
+	
+	void onDraw(Canvas canvas)
+		canvas#drawColor(Color#WHITE);
+		
+		stroke = new Paint();
+		//stroke.setColor(Color.BLACK);
+		stroke#setStrokeWidth(strokeWidth);
+		stroke#setStyle(Paint$Style#STROKE);
+		stroke#setAntiAlias(true);
+		
+		fill = new Paint();
+		fill#setColor(Color#WHITE);
+		fill#setStyle(Paint$Style#FILL);
+		
+		// draw background tabs
+		stroke#setColor(Color#GRAY);
+		for (reverse [0 .. length tabs - 1]) do i:
+			if i != currentTab then
+				canvas#drawPath(tabs[i], fill);
+				canvas#drawPath(tabs[i], stroke);
+				canvas#drawPath(icons[i], stroke);
+			fi
+		done;
+		
+		// draw foreground tab
+		stroke#setColor(Color#BLACK);
+		canvas#drawPath(tabs[currentTab], fill);
+		canvas#drawPath(tabs[currentTab], stroke);
+		canvas#drawPath(icons[currentTab], stroke);
+		
+		// draw "page edge"
+		bottom = h-strokeWidth/2;
+		canvas#drawLine(0, bottom, currentTab*wUnit*(picW+borderW), bottom, stroke);
+		canvas#drawLine((currentTab+1)*wUnit*(picW+borderW)+wUnit*borderW, bottom, w, bottom, stroke),
+	
+	boolean onTouchEvent(MotionEvent event)
+		//FIXME: "If this method is used to detect click actions, it is recommended that the actions be performed by implementing and calling performClick(). This will ensure consistent system behavior, including (...)"
+		if 0 > index MotionEventCompat#getActionMasked(event) [
+			MotionEvent#ACTION_DOWN, MotionEvent#ACTION_MOVE, MotionEvent#ACTION_UP
+		] then
+			false
+		else
+			x = MotionEventCompat#getX(event, 0);
+			checkFrom i = (
+				right = (i+1)*wUnit*(picW+borderW);
+				if x <= right then
+					i
+				else
+					checkFrom (i + 1)
+				fi
+				);
+			newtab = checkFrom 0;
+			if newtab != currentTab and newtab < length tabs then
+				currentTab := newtab;
+				this#invalidate() // FIXME: are we in UI thread?
+			fi;
+			true
+		fi,
+end;
