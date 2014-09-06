@@ -2,11 +2,11 @@ module com.akavel.utils;
 
 import android.view.View;
 import android.view.View$OnClickListener;
-import android.app.Activity;
+import android.util.Log;
 
+load yeti.lang.io;
 
 {
-	//viewById obj id is ~android.app.Activity -> number -> ~View = obj #findViewById(id);
 	viewById obj id is ~android.view.View -> number -> ~View    = obj #findViewById(id),
 	
 	setOnClickListener view listener is ~View -> (~View -> ()) -> () =
@@ -16,4 +16,15 @@ import android.app.Activity;
 					listener v;
 			end;
 			new Click())),
+	
+	walkFilesRecursive dir walker is string -> (string -> ()) -> () =
+		for (listDirectory false dir) do f:
+			if f.directory? then
+				_ = Log#i("ScanBooksTask", "Scanning dir: \(f.path)");
+				walkFilesRecursive f.path walker
+			else
+				walker f.path
+			fi
+		done,
+
 }
