@@ -8,6 +8,7 @@ load yeti.lang.io;
 
 {
 	len array = map \1 array |> sum,
+	inList elem array = (-1 != index elem array),
 
 	viewById obj id is ~android.view.View -> number -> ~View    = obj #findViewById(id),
 	

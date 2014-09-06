@@ -13,6 +13,8 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.View$MeasureSpec;
 
+load com.akavel.utils;
+
 picW = 80;
 borderW = 20;
 picH = 80;
@@ -29,7 +31,7 @@ class TabChoiceView(Context context, AttributeSet attrs) extends View(context, a
 				View$MeasureSpec#getSize(widthMeasureSpec)
 			fi;
 		h =
- 			if 0 <= index View$MeasureSpec#getMode(heightMeasureSpec) [
+ 			if View$MeasureSpec#getMode(heightMeasureSpec) `inList`  [
 				View$MeasureSpec#UNSPECIFIED, View$MeasureSpec#AT_MOST
 			] then
 				picH
@@ -147,7 +149,7 @@ class TabChoiceView(Context context, AttributeSet attrs) extends View(context, a
 	
 	boolean onTouchEvent(MotionEvent event)
 		//FIXME: "If this method is used to detect click actions, it is recommended that the actions be performed by implementing and calling performClick(). This will ensure consistent system behavior, including (...)"
-		if 0 > index MotionEventCompat#getActionMasked(event) [
+		if not MotionEventCompat#getActionMasked(event) `inList`  [
 			MotionEvent#ACTION_DOWN, MotionEvent#ACTION_MOVE, MotionEvent#ACTION_UP
 		] then
 			false
