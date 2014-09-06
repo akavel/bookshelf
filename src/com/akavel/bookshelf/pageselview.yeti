@@ -14,17 +14,16 @@ class PageSelectorView(Context context, AttributeSet attrs) extends LinearLayout
 	pagesCount = 4,
 	
 	setListeners _ =
-		parent = this;
 		setOnClickListener (viewById this R$id#page_selector_view_up) do v:
 			if currentPage > 0 then
 				currentPage := currentPage - 1;
-				parent#update()
+				this#update()
 			fi
 		done;
 		setOnClickListener (viewById this R$id#page_selector_view_down) do v:
 			if currentPage < (pagesCount - 1) then
 				currentPage := currentPage + 1;
-				parent#update()
+				this#update()
 			fi
 		done,
 		
