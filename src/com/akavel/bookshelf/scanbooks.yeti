@@ -67,7 +67,7 @@ import android.util.Log;
 					path = Environment#getExternalStorageDirectory()#getAbsolutePath();
 					folders = Pattern#compile("/")#split(path); //FIXME: use yeti regexp lib
 					//lastFolder = folders[folders.length - 1];
-					lastFolder = fold (do _ b: b done) "" folders;
+					lastFolder = fold (_ _ b = b) "" folders;
 					var isDigit = false;
 					try
 						Integer#valueOf(lastFolder);
@@ -170,7 +170,7 @@ import android.util.Log;
 					db#close()
 				yrt;
 				
-				len array = fold (do x _: x+1 done) 0 array;
+				len array = fold (_ x _ = x+1) 0 array;
 				progress := progress + (len values);
 				onProgressListener progress,
 			
