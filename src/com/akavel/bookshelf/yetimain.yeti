@@ -15,9 +15,7 @@ import android.widget.ListView;
 import android.widget.TextView;
 
 load com.akavel.bookshelf.scanbooks;
-
-viewById obj id is ~android.app.Activity -> number -> ~View = obj #findViewById(id);
-viewById obj id is ~android.view.View -> number -> ~View    = obj #findViewById(id);
+load com.akavel.utils;
 
 class BookView(Book book, Context context, AttributeSet attrs) extends LinearLayout(context, attrs)
 	self _ = this,

@@ -9,13 +9,15 @@ import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+load com.akavel.utils;
+
 class PageSelectorView(Context context, AttributeSet attrs) extends LinearLayout(context, attrs)
 	var currentPage = 0,
 	pagesCount = 4,
 	
 	setListeners _ =
 		parent = this;
-		this#findViewById(R$id#page_selector_view_up)#setOnClickListener((
+		(viewById this R$id#page_selector_view_up)#setOnClickListener((
 			class ClickUp extends View$OnClickListener
 				void onClick(View v)
 					if currentPage > 0 then
@@ -25,7 +27,7 @@ class PageSelectorView(Context context, AttributeSet attrs) extends LinearLayout
 			end;
 			new ClickUp()));
 
-		this#findViewById(R$id#page_selector_view_down)#setOnClickListener((
+		(viewById this R$id#page_selector_view_down)#setOnClickListener((
 			class ClickDown extends View$OnClickListener
 				void onClick(View v)
 					if currentPage < (pagesCount - 1) then
@@ -45,13 +47,13 @@ class PageSelectorView(Context context, AttributeSet attrs) extends LinearLayout
 	
 	/// NOTE: call only from UI thread.
 	void update()
-		info = this#findViewById(R$id#page_selector_view_info) unsafely_as ~TextView;
+		info = (viewById this R$id#page_selector_view_info) unsafely_as ~TextView;
 		info#setText("\(currentPage + 1)/\(pagesCount)");
 		
-		up = this#findViewById(R$id#page_selector_view_up) unsafely_as ~Button;
+		up = (viewById this R$id#page_selector_view_up) unsafely_as ~Button;
 		up#setEnabled(currentPage > 0);
 		
-		down = this#findViewById(R$id#page_selector_view_down) unsafely_as ~Button;
+		down = (viewById this R$id#page_selector_view_down) unsafely_as ~Button;
 		down#setEnabled(currentPage < (pagesCount - 1));
 		
 		this#invalidate(),

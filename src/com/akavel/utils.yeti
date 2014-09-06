@@ -1,0 +1,10 @@
+module com.akavel.utils;
+
+import android.view.View;
+import android.app.Activity;
+
+
+{
+	//viewById obj id is ~android.app.Activity -> number -> ~View = obj #findViewById(id);
+	viewById obj id is ~android.view.View -> number -> ~View    = obj #findViewById(id);
+}
