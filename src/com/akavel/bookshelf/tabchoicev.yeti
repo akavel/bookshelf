@@ -54,6 +54,8 @@ class TabChoiceView(Context context, AttributeSet attrs) extends View(context, a
 		tab#lineTo(wUnit*borderW, strokeWidth/2);
 		tab#lineTo(wUnit*(borderW+picW), strokeWidth/2);
 		tab#lineTo(wUnit*(borderW+picW+borderW), h-strokeWidth/2);
+		clearArray tabs;
+		clearArray icons;
 		for [0..4] do i:
 			p = new Path();
 			p#addPath(tab, i*wUnit*(borderW+picW), 0);
