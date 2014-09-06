@@ -1,6 +1,7 @@
 module com.akavel.bookshelf.scanbooks;
 
 import java.io.File;
+import java.io.InputStream;
 import javax.xml.parsers.DocumentBuilderFactory;
 
 import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
@@ -78,41 +79,52 @@ defaultForEmpty s default = if s == "" then default else s fi;
 		fi;
 		keys rv,
 
+	walkZip path walker is string -> (string -> (() -> ~InputStream) -> boolean) -> () =
+		zip = new ZipFile(new File(path));
+		try
+			entries = zip#getEntries();
+			var more = entries#hasMoreElements();
+			more loop (
+				entry = (entries#nextElement() unsafely_as ~ZipArchiveEntry);
+				path = entry#getName();
+				streamOpener _ = zip#getInputStream(entry);
+				more := (walker path streamOpener) and entries#hasMoreElements()
+			)
+		finally
+			zip#close()
+		yrt,
+		
+	basename path is string -> string =
+		new File(path)#getName(),
+		
 	scanBooksTask context onProgressListener =
 		class ScanBooksTask extends AsyncTask
 			extractMetadata path is string -> ~Book =
 				_ = Log#d("ScanBooksTask", "extracting from zip: \(path)");
-				zip = new ZipFile(path);
 				var title = "";
 				var author = "";
-				try
-					xmlFactory = DocumentBuilderFactory#newInstance();
-					entries = zip#getEntries();
-					var more = entries#hasMoreElements();
-					more loop (
-						entry = (entries#nextElement() unsafely_as ~ZipArchiveEntry);
-						_ = Log#d("ScanBooksTask", "* zip entry: \(entry#getName())");
-						filename = new File(entry#getName())#getName();
-						if filename == "content.opf" then
-							doc = xmlFactory#newDocumentBuilder()#parse(zip#getInputStream(entry));
-							doc#normalize();
-							
-							ctx = JXPathContext#newContext(doc);
-							ctx#registerNamespace("dc", "http://purl.org/dc/elements/1.1/");
-							
-							title := ctx#getValue("//dc:title")#toString();
-							_ = Log#d("ScanBooksTask", "\(path) - title=\(title)");
-							
-							author := ctx#getValue("//dc:creator")#toString();
-							_ = Log#d("ScanBooksTask", "\(path) - author=\(author)");
-							more := false
-						else
-							more := entries#hasMoreElements()
-						fi
-					);
-				finally
-					zip#close()
-				yrt;
+				walkZip path do path streamOpener:
+					if basename path == "content.opf" then
+						doc = DocumentBuilderFactory
+							#newInstance()
+							#newDocumentBuilder()
+							#parse(streamOpener ());
+						doc#normalize();
+						
+						ctx = JXPathContext#newContext(doc);
+						ctx#registerNamespace("dc", "http://purl.org/dc/elements/1.1/");
+						
+						title := ctx#getValue("//dc:title")#toString();
+						_ = Log#d("ScanBooksTask", "\(path) - title=\(title)");
+						
+						author := ctx#getValue("//dc:creator")#toString();
+						_ = Log#d("ScanBooksTask", "\(path) - author=\(author)");
+						
+						false
+					else
+						true
+					fi
+				done;
 				new Book(title, author, path),
 			
 			var progress = 0,
@@ -131,7 +143,9 @@ defaultForEmpty s default = if s == "" then default else s fi;
 					if strEnds? path ".epub" then
 						try
 							book = extractMetadata path;
-							this#publishProgress([book])
+							if defined? book then
+								this#publishProgress([book])
+							fi
 						catch Exception e:
 							e#printStackTrace();
 							_ = Log#e("ScanBooksTask", path, e)
