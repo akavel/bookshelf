@@ -37,10 +37,11 @@ class PageSelectorView(Context context, AttributeSet attrs) extends LinearLayout
 			fi
 		done,
 		
-	self _ = this,
+	inflate _ =
+		LayoutInflater#from(context)#inflate(R$layout#layout_page_selector_view, this, true);
+
 	_ =
-		self = self ();
-		LayoutInflater#from(context)#inflate(R$layout#layout_page_selector_view, self, true);
+		inflate ();
 		setListeners ();
 		update (),
 end;
