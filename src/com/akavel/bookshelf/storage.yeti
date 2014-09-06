@@ -1,0 +1,84 @@
+module com.akavel.bookshelf.storage;
+
+import android.content.ContentValues;
+import android.content.Context;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteDatabase$CursorFactory;
+import android.database.sqlite.SQLiteOpenHelper;
+import android.util.Log;
+
+currentVersion = 1;
+
+// FIXME: use CURRENT_VERSION instead of '1' below
+class BooksStorage(Context context) extends SQLiteOpenHelper(context, "bookshelf.db", (() unsafely_as ~SQLiteDatabase$CursorFactory), currentVersion)
+	titleField = "title",
+	authorField = "author",
+	pathField = "path",
+	shelvesTable = "shelves",
+	
+	void onCreate(SQLiteDatabase db)
+		// FIXME: use CURRENT_VERSION instead of '1' below
+		this#onUpgrade(db, 0, currentVersion);
+		
+		//FIXME: dummy value for testing; remove
+		sample = new ContentValues();
+		sample#put(titleField, "Dżuma");
+		sample#put(authorField, "Albert Camus");
+		sample#put(pathField, "/mnt/foo/bar/dzuma.epub");
+		_ = db#insert(shelvesTable, (), sample),
+	
+	targets oldv newv targetv =
+		(oldv <= (targetv - 1)) and (targetv <= newv),
+	
+	void onUpgrade(SQLiteDatabase db, int oldv, int newv)
+		if targets oldv newv 1 then
+			db#execSQL(
+				"CREATE TABLE shelves (" ^
+				"	_id INT PRIMARY KEY," ^ // column name used by Android helper classes
+				"	title TEXT NOT NULL," ^
+				"	author TEXT NOT NULL," ^
+				"	path TEXT NOT NULL UNIQUE," ^
+				"	lastOpened INT," ^
+				"	shelf INT DEFAULT 0" ^
+				");");
+			()
+		fi,
+	
+	Cursor openCursor(int shelf)
+		s = string(shelf);
+		//FIXME: as described in Android docs, don't use getReadableDatabase() in GUI thread
+		//FIXME: handle multithreaded access to DB somehow
+		this#getReadableDatabase()#rawQuery("SELECT title, author, path, _id FROM shelves WHERE shelf=? ORDER BY title", [s]),
+
+	void merge(Book[] values)
+		db = this#getWritableDatabase();
+		try
+			db#beginTransaction();
+			for values do book:
+				_ = Log#d("", "Adding \(book#path)");
+				data = new ContentValues();
+				data#put(authorField, book#author);
+				data#put(titleField, book#title);
+				data#put(pathField, book#path);
+				
+				cur = db#rawQuery("SELECT * FROM \(shelvesTable) WHERE \(pathField) = ?",
+					[book#path]);
+				n = cur#getCount();
+				cur#close();
+				_ = Log#d("", " found \(n)");
+				
+				if n > 0 then
+					_ = db#update(shelvesTable, data, "\(pathField) = ?", [book#path])
+				else
+					_ = db#insertOrThrow(shelvesTable, (), data)
+				fi;
+				()
+			done;
+			db#setTransactionSuccessful();
+			_ = Log#d("", "committing transaction")
+		finally
+			db#endTransaction();
+			db#close()
+		yrt,
+end;

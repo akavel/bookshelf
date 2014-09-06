@@ -31,6 +31,8 @@ import android.os.Environment;
 import android.text.TextUtils;
 import android.util.Log;
 
+load com.akavel.bookshelf.storage;
+
 //TODO: switch to use yeti.xml module?
 
 
@@ -139,36 +141,8 @@ import android.util.Log;
 			var progress = 0,
 			
 			void onProgressUpdate(Object[] values)
-				db = new BooksStorage(context)#getWritableDatabase();
-				try
-					db#beginTransaction();
-					for values do book_:
-						book = (book_ unsafely_as ~Book);
-						_ = Log#d("", "Adding \(book#path)");
-						data = new ContentValues();
-						data#put(BooksStorage#AUTHOR, book#author);
-						data#put(BooksStorage#TITLE, book#title);
-						data#put(BooksStorage#PATH, book#path);
-						
-						cur = db#rawQuery("SELECT * FROM \(BooksStorage#SHELVES) WHERE \(BooksStorage#PATH) = ?",
-							[book#path]);
-						n = cur#getCount();
-						cur#close();
-						_ = Log#d("", " found \(n)");
-						
-						if n > 0 then
-							_ = db#update(BooksStorage#SHELVES, data, "\(BooksStorage#PATH) = ?", [book#path])
-						else
-							_ = db#insertOrThrow(BooksStorage#SHELVES, (), data)
-						fi;
-						()
-					done;
-					db#setTransactionSuccessful();
-					_ = Log#d("", "committing transaction")
-				finally
-					db#endTransaction();
-					db#close()
-				yrt;
+				new BooksStorage(context)
+					#merge(map' (unsafely_as ~Book) values);
 				
 				len array = fold (_ x _ = x+1) 0 array;
 				progress := progress + (len values);
