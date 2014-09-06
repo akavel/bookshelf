@@ -36,14 +36,11 @@ class PageSelectorView(Context context, AttributeSet attrs) extends LinearLayout
 	
 	/// NOTE: call only from UI thread.
 	void update()
-		info = (viewById this R$id#page_selector_view_info) unsafely_as ~TextView;
-		info#setText("\(currentPage + 1)/\(pagesCount)");
-		
-		up = (viewById this R$id#page_selector_view_up) unsafely_as ~Button;
-		up#setEnabled(currentPage > 0);
-		
-		down = (viewById this R$id#page_selector_view_down) unsafely_as ~Button;
-		down#setEnabled(currentPage < (pagesCount - 1));
-		
+		viewById this R$id#page_selector_view_info unsafely_as ~TextView
+			#setText("\(currentPage + 1)/\(pagesCount)");
+		viewById this R$id#page_selector_view_up unsafely_as ~Button
+			#setEnabled(currentPage > 0);
+		viewById this R$id#page_selector_view_down unsafely_as ~Button
+			#setEnabled(currentPage < (pagesCount - 1));
 		this#invalidate(),
 end;
