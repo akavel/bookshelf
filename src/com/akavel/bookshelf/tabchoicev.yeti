@@ -48,7 +48,60 @@ class TabChoiceView(Context context, AttributeSet attrs) extends View(context, a
 	var wUnit = 0.0,
 	
 	prepareDrawing _ =
-		wUnit := w / (5*picW + 6*borderW);
+		star icon midx midy arm
+				is ~Path -> number -> number -> number -> () = (
+			arms = 6;
+			for [0 .. arms-1] do i:
+				angle = i*pi*2/arms;
+				icon#moveTo(midx, midy);
+				icon#rLineTo(arm*(cos angle), arm*(sin angle));
+				//icon#lineTo(midx+arm*Math.cos(angle), midy)
+			done
+			);
+		circle icon midx midy arm
+				is ~Path -> number -> number -> number -> () = (
+			icon#addCircle(midx, midy, arm, Path$Direction#CCW)
+			);
+		triangle icon midx midy arm
+				is ~Path -> number -> number -> number -> () = (
+			h = 2*arm * (sqrt 3)/2;
+			icon#moveTo(midx, midy-arm);
+			icon#rLineTo(arm, h);
+			icon#rLineTo(-2*arm, 0);
+			icon#close()
+			);
+		square icon midx midy arm
+				is ~Path -> number -> number -> number -> () = (
+			arm2 = arm*0.8;
+			icon#addRect(midx-arm2, midy-arm2, midx+arm2, midy+arm2, Path$Direction#CCW)
+			);
+		slash icon midx midy arm
+				is ~Path -> number -> number -> number -> () = (
+			dx = arm*0.7;
+			dy = arm*0.9;
+			icon#moveTo(midx-dx, midy+dy);
+			icon#lineTo(midx+dx, midy-dy);
+			);
+			
+		
+		shapes = array [star, circle, triangle, square, slash];
+		n = length shapes;
+
+		wUnit := w / (n*picW + (n+1)*borderW);
+		arm = (min h wUnit*picW)*0.7/2;
+		midy = h/2;
+		renderTo array shapes =
+			if length array < length shapes then
+				i = length array;
+				midx = wUnit*(borderW+picW/2) + i*wUnit*(borderW+picW);
+				path = new Path();
+				shapes[i] path midx midy arm;
+				push array path;
+				renderTo array shapes
+			fi;
+		
+		clearArray icons;
+		renderTo icons shapes;
 		
 		tab = new Path();
 		tab#moveTo(0, h - strokeWidth/2);
@@ -57,60 +110,11 @@ class TabChoiceView(Context context, AttributeSet attrs) extends View(context, a
 		tab#lineTo(wUnit*(borderW+picW+borderW), h-strokeWidth/2);
 		
 		clearArray tabs;
-		clearArray icons;
-		for [0..4] do i:
+		for [0 .. n-1] do i:
 			p = new Path();
 			p#addPath(tab, i*wUnit*(borderW+picW), 0);
 			push tabs p;
-			push icons new Path()
-		done;
-		
-		arm = (min h wUnit*picW)*0.7/2;
-		midy = h/2;
-		
-		// icon 1/5: star
-		var midx = wUnit*(borderW+picW/2);
-		(
-			arms = 6;
-			for [0 .. arms-1] do i:
-				angle = i*pi*2/arms;
-				icons[0]#moveTo(midx, midy);
-				icons[0]#rLineTo(arm*(cos angle), arm*(sin angle));
-				//icons[0].lineTo(midx+arm*Math.cos(angle), midy)
-			done
-		);
-		
-		// icon 2/5: circle
-		midx := midx + wUnit*(borderW+picW);
-		(
-			icons[1]#addCircle(midx, midy, arm, Path$Direction#CCW)
-		);
-		
-		// icon 3/5: triangle
-		midx := midx + wUnit*(borderW+picW);
-		(
-			h = 2*arm * (sqrt 3)/2;
-			icons[2]#moveTo(midx, midy-arm);
-			icons[2]#rLineTo(arm, h);
-			icons[2]#rLineTo(-2*arm, 0);
-			icons[2]#close()
-		);
-		
-		// icon 4/5: square
-		midx := midx + wUnit*(borderW+picW);
-		(
-			arm2 = arm*0.8;
-			icons[3]#addRect(midx-arm2, midy-arm2, midx+arm2, midy+arm2, Path$Direction#CCW)
-		);
-		
-		// icon 5/5: slash
-		midx := midx + wUnit*(borderW+picW);
-		(
-			dx = arm*0.7;
-			dy = arm*0.9;
-			icons[4]#moveTo(midx-dx, midy+dy);
-			icons[4]#lineTo(midx+dx, midy-dy);
-		),
+		done,
 	
 	void onSizeChanged(int w_, int h_, int oldw, int oldh)
 		w := w_;
