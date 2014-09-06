@@ -136,7 +136,6 @@ basename path is string -> string = (
 				new BooksStorage(context)
 					#merge(map' (unsafely_as ~Book) values);
 				
-				len array = fold (_ x _ = x+1) 0 array;
 				progress := progress + (len values);
 				onProgressListener progress,
 			

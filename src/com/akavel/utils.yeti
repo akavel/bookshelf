@@ -7,6 +7,8 @@ import android.util.Log;
 load yeti.lang.io;
 
 {
+	len array = map \1 array |> sum,
+
 	viewById obj id is ~android.view.View -> number -> ~View    = obj #findViewById(id),
 	
 	setOnClickListener view listener is ~View -> (~View -> ()) -> () =
