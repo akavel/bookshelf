@@ -20,83 +20,86 @@ load com.akavel.utils;
 
 defaultForEmpty s default = if s == "" then default else s fi;
 
-{
-	// Paths to all available SD-Cards in the system (include emulated)
-	//
-	// Warning: Hack! Based on Android source code of version 4.3 (API 18)
-	// Because there is no standart way to get it.
-	// TODO: Test on future Android versions 4.4+
-	storageDirectories =
-		// Final set of paths
-		rv is hash<string, ()> = [:];
-		// All Secondary SD-CARDs (all exclude primary) separated by ":"
-		rawSecondaryStoragesStr = System#getenv("SECONDARY_STORAGE");
-		// Primary emulated SD-CARD
-		rawEmulatedStorageTarget = System#getenv("EMULATED_STORAGE_TARGET");
-		if rawEmulatedStorageTarget == "" then
-			// Device has physical external storage; use plain paths.
-			// Primary physical SD-CARD (not emulated)
-			rv[System#getenv("EXTERNAL_STORAGE") `defaultForEmpty` "/storage/sdcard0"] := ()
-		else
-			// Device has emulated storage; external storage paths should have
-			// userId burned into them.
-			rawUserId =
-				if Build$VERSION#SDK_INT < 17 then //Build.VERSION_CODES.JELLY_BEAN_MR1
-					""
-				else
-					path = Environment#getExternalStorageDirectory()#getAbsolutePath();
-					lastFolder = like "/([^/]+)/*$" path () |> tail |> head;  // extract subpattern match
-					var isDigit = false;
-					try
-						Integer#valueOf(lastFolder);
-						isDigit := true //FIXME: don't do via exceptions
-					catch NumberFormatException ignored:
-						()  //FIXME: do we need to call anything here for NOP ?
-					yrt;
-					if isDigit then
-						lastFolder
-					else
-						""
-					fi
-				fi;
-			// /storage/emulated/0[1,2,...]
-			if rawUserId == "" then
-				rv[rawEmulatedStorageTarget] := ()
+// Paths to all available SD-Cards in the system (include emulated)
+//
+// Warning: Hack! Based on Android source code of version 4.3 (API 18)
+// Because there is no standart way to get it.
+// TODO: Test on future Android versions 4.4+
+storageDirectories = (
+	// Final set of paths
+	rv is hash<string, ()> = [:];
+	// All Secondary SD-CARDs (all exclude primary) separated by ":"
+	rawSecondaryStoragesStr = System#getenv("SECONDARY_STORAGE");
+	// Primary emulated SD-CARD
+	rawEmulatedStorageTarget = System#getenv("EMULATED_STORAGE_TARGET");
+	if rawEmulatedStorageTarget == "" then
+		// Device has physical external storage; use plain paths.
+		// Primary physical SD-CARD (not emulated)
+		rv[System#getenv("EXTERNAL_STORAGE") `defaultForEmpty` "/storage/sdcard0"] := ()
+	else
+		// Device has emulated storage; external storage paths should have
+		// userId burned into them.
+		rawUserId =
+			if Build$VERSION#SDK_INT < 17 then //Build.VERSION_CODES.JELLY_BEAN_MR1
+				""
 			else
-				rv[rawEmulatedStorageTarget ^ File#separator ^ string(rawUserId)]
-			fi
-		fi;
-		// Add all secondary storages
-		if not rawSecondaryStoragesStr == "" then
-			// All Secondary SD-CARDs splited into array
-			//rawSecondaryStorages = rawSecondaryStoragesStr#split(File#pathSeparator);
-			rawSecondaryStorages = strSplit File#pathSeparator rawSecondaryStoragesStr; //FIXME: escape the separator to form regexp?
-			for rawSecondaryStorages do s:
-				if not (s == "") then
-					rv[s] := ()
+				path = Environment#getExternalStorageDirectory()#getAbsolutePath();
+				lastFolder = like "/([^/]+)/*$" path () |> tail |> head;  // extract subpattern match
+				var isDigit = false;
+				try
+					Integer#valueOf(lastFolder);
+					isDigit := true //FIXME: don't do via exceptions
+				catch NumberFormatException ignored:
+					()  //FIXME: do we need to call anything here for NOP ?
+				yrt;
+				if isDigit then
+					lastFolder
+				else
+					""
 				fi
-			done
-		fi;
-		keys rv,
+			fi;
+		// /storage/emulated/0[1,2,...]
+		if rawUserId == "" then
+			rv[rawEmulatedStorageTarget] := ()
+		else
+			rv[rawEmulatedStorageTarget ^ File#separator ^ string(rawUserId)]
+		fi
+	fi;
+	// Add all secondary storages
+	if not rawSecondaryStoragesStr == "" then
+		// All Secondary SD-CARDs splited into array
+		//rawSecondaryStorages = rawSecondaryStoragesStr#split(File#pathSeparator);
+		rawSecondaryStorages = strSplit File#pathSeparator rawSecondaryStoragesStr; //FIXME: escape the separator to form regexp?
+		for rawSecondaryStorages do s:
+			if not (s == "") then
+				rv[s] := ()
+			fi
+		done
+	fi;
+	keys rv
+	);
 
-	walkZip path walker is string -> (string -> (() -> ~InputStream) -> boolean) -> () =
-		zip = new ZipFile(new File(path));
-		try
-			entries = zip#getEntries();
-			var more = entries#hasMoreElements();
-			more loop (
-				entry = (entries#nextElement() unsafely_as ~ZipArchiveEntry);
-				path = entry#getName();
-				streamOpener _ = zip#getInputStream(entry);
-				more := (walker path streamOpener) and entries#hasMoreElements()
-			)
-		finally
-			zip#close()
-		yrt,
-		
-	basename path is string -> string =
-		new File(path)#getName(),
-		
+walkZip path walker is string -> (string -> (() -> ~InputStream) -> boolean) -> () = (
+	zip = new ZipFile(new File(path));
+	try
+		entries = zip#getEntries();
+		var more = entries#hasMoreElements();
+		more loop (
+			entry = (entries#nextElement() unsafely_as ~ZipArchiveEntry);
+			path = entry#getName();
+			streamOpener _ = zip#getInputStream(entry);
+			more := (walker path streamOpener) and entries#hasMoreElements()
+		)
+	finally
+		zip#close()
+	yrt
+	);
+	
+basename path is string -> string = (
+	new File(path)#getName()
+	);
+	
+{
 	scanBooksTask context onProgressListener =
 		class ScanBooksTask extends AsyncTask
 			extractMetadata path is string -> ~Book =
