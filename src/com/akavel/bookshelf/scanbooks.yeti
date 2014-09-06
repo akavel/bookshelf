@@ -45,13 +45,13 @@ storageDirectories = (
 			else
 				path = Environment#getExternalStorageDirectory()#getAbsolutePath();
 				lastFolder = like "/([^/]+)/*$" path () |> tail |> head;  // extract subpattern match
-				var isDigit = false;
-				try
-					Integer#valueOf(lastFolder);
-					isDigit := true //FIXME: don't do via exceptions
-				catch NumberFormatException ignored:
-					()  //FIXME: do we need to call anything here for NOP ?
-				yrt;
+				isDigit =
+					try
+						Integer#valueOf(lastFolder);
+						true //FIXME: don't do via exceptions
+					catch NumberFormatException:
+						false
+					yrt;
 				if isDigit then
 					lastFolder
 				else
