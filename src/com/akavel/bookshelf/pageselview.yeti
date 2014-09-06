@@ -13,17 +13,27 @@ class PageSelectorView(Context context, AttributeSet attrs) extends LinearLayout
 	var currentPage = 0,
 	pagesCount = 4,
 	
+	/// NOTE: call only from UI thread.
+	update _ =
+		viewById this R$id#page_selector_view_info unsafely_as ~TextView
+			#setText("\(currentPage + 1)/\(pagesCount)");
+		viewById this R$id#page_selector_view_up unsafely_as ~Button
+			#setEnabled(currentPage > 0);
+		viewById this R$id#page_selector_view_down unsafely_as ~Button
+			#setEnabled(currentPage < (pagesCount - 1));
+		this#invalidate(),
+	
 	setListeners _ =
 		setOnClickListener (viewById this R$id#page_selector_view_up) do v:
 			if currentPage > 0 then
 				currentPage := currentPage - 1;
-				this#update()
+				update ()
 			fi
 		done;
 		setOnClickListener (viewById this R$id#page_selector_view_down) do v:
 			if currentPage < (pagesCount - 1) then
 				currentPage := currentPage + 1;
-				this#update()
+				update ()
 			fi
 		done,
 		
@@ -32,15 +42,5 @@ class PageSelectorView(Context context, AttributeSet attrs) extends LinearLayout
 		self = self ();
 		LayoutInflater#from(context)#inflate(R$layout#layout_page_selector_view, self, true);
 		setListeners ();
-		self#update(),
-	
-	/// NOTE: call only from UI thread.
-	void update()
-		viewById this R$id#page_selector_view_info unsafely_as ~TextView
-			#setText("\(currentPage + 1)/\(pagesCount)");
-		viewById this R$id#page_selector_view_up unsafely_as ~Button
-			#setEnabled(currentPage > 0);
-		viewById this R$id#page_selector_view_down unsafely_as ~Button
-			#setEnabled(currentPage < (pagesCount - 1));
-		this#invalidate(),
+		update (),
 end;
