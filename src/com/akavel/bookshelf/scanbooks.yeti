@@ -2,33 +2,16 @@ module com.akavel.bookshelf.scanbooks;
 
 import java.io.File;
 import java.io.FileFilter;
-import java.io.IOException;
-import java.lang.Integer;
-import java.util.Collections;
-import java.util.Enumeration;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.regex.Pattern;
-import java.util.zip.ZipEntry;
 
 import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
 
 import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
 import org.apache.commons.compress.archivers.zip.ZipFile;
 import org.apache.commons.jxpath.JXPathContext;
-import org.jaxen.JaxenException;
-import org.w3c.dom.Document;
-import org.xml.sax.SAXException;
 
-import android.content.ContentValues;
-import android.content.Context;
-import android.database.Cursor;
-import android.database.sqlite.SQLiteDatabase;
 import android.os.AsyncTask;
 import android.os.Build$VERSION;
 import android.os.Environment;
-import android.text.TextUtils;
 import android.util.Log;
 
 load com.akavel.bookshelf.storage;
@@ -51,9 +34,9 @@ load com.akavel.bookshelf.storage;
 		rawSecondaryStoragesStr = System#getenv("SECONDARY_STORAGE");
 		// Primary emulated SD-CARD
 		rawEmulatedStorageTarget = System#getenv("EMULATED_STORAGE_TARGET");
-		if TextUtils#isEmpty(rawEmulatedStorageTarget) then
+		if rawEmulatedStorageTarget == "" then
 			// Device has physical external storage; use plain paths.
-			if TextUtils#isEmpty(rawExternalStorage) then
+			if rawExternalStorage == "" then
 				// EXTERNAL_STORAGE undefined; falling back to default.
 				rv["/storage/sdcard0"] := ()
 			else
@@ -67,9 +50,7 @@ load com.akavel.bookshelf.storage;
 					""
 				else
 					path = Environment#getExternalStorageDirectory()#getAbsolutePath();
-					folders = Pattern#compile("/")#split(path); //FIXME: use yeti regexp lib
-					//lastFolder = folders[folders.length - 1];
-					lastFolder = fold (_ _ b = b) "" folders;
+					lastFolder = like "/([^/]+)/*$" path () |> tail |> head;  // extract subpattern match
 					var isDigit = false;
 					try
 						Integer#valueOf(lastFolder);
@@ -84,14 +65,14 @@ load com.akavel.bookshelf.storage;
 					fi
 				fi;
 			// /storage/emulated/0[1,2,...]
-			if TextUtils#isEmpty(rawUserId) then
+			if rawUserId == "" then
 				rv[rawEmulatedStorageTarget] := ()
 			else
 				rv[rawEmulatedStorageTarget ^ File#separator ^ string(rawUserId)]
 			fi
 		fi;
 		// Add all secondary storages
-		if not TextUtils#isEmpty(rawSecondaryStoragesStr) then
+		if not rawSecondaryStoragesStr == "" then
 			// All Secondary SD-CARDs splited into array
 			//rawSecondaryStorages = rawSecondaryStoragesStr#split(File#pathSeparator);
 			rawSecondaryStorages = strSplit File#pathSeparator rawSecondaryStoragesStr; //FIXME: escape the separator to form regexp?
