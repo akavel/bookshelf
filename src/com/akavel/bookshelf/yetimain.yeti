@@ -79,10 +79,9 @@ class MainActivity extends FragmentActivity
 		
 		books = new BooksStorage(this#getBaseContext());
 		
-		cursor = books#openCursor(0);
-		shelfAdapter = new BooksDataAdapter(cursor);
-		shelf = (this#findViewById(R$id#shelf2) unsafely_as ~ListView);
-		shelf#setAdapter(shelfAdapter);
+		shelfAdapter = new BooksDataAdapter(books#openCursor(0));
+		this#findViewById(R$id#shelf2) unsafely_as ~ListView
+			#setAdapter(shelfAdapter);
 		
 		booksScan = scanBooksTask this do progress:
 			shelfAdapter#requery();
@@ -90,8 +89,7 @@ class MainActivity extends FragmentActivity
 			title = this#getResources()#getString(R$string#app_name) ^ ": scanned \(progress) book(s)";
 			this#setTitle(title)
 		done;
-		booksScan#execute([]);
-		(),
+		_ = booksScan#execute([]),
 
 	boolean onCreateOptionsMenu(Menu menu)
 		this#getMenuInflater()#inflate(R$menu#main, menu);
