@@ -11,6 +11,8 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 import android.widget.LinearLayout;
+import android.widget.RelativeLayout;
+import android.widget.RelativeLayout$LayoutParams;
 import android.widget.ListView;
 import android.widget.TextView;
 
@@ -98,19 +100,37 @@ class MainActivity extends FragmentActivity
 	
 	void onCreate(Bundle state)
 		super#onCreate(state);
-		this#setContentView(R$layout#activity_main);
+		// WIP: starting with some sample how to build layout programmatically
+		// http://stackoverflow.com/a/4979362/98528
+		layout = new RelativeLayout(this);
+
+		text = new TextView(this);
+		text#setText("Test");
 		
-		books = new BooksStorage(this#getBaseContext());
+		textParams = new RelativeLayout$LayoutParams(
+			RelativeLayout$LayoutParams#WRAP_CONTENT, RelativeLayout$LayoutParams#WRAP_CONTENT);
+		textParams#addRule(RelativeLayout#CENTER_IN_PARENT);
 		
-		shelfAdapter = new BooksDataAdapter(books#openCursor(0));
-		this#findViewById(R$id#shelf2) unsafely_as ~ListView
-			#setAdapter(shelfAdapter);
+		text#setLayoutParams(textParams);
+		layout#addView(text);
 		
-		_ = (scanBooksTask this do progress:
-			shelfAdapter#requery();
-			shelfAdapter#notifyDataSetChanged();
-			this#setTitle("\(appName ()): scanned \(progress) book(s)")
-		done) #execute([]),
+		layoutParams = new RelativeLayout$LayoutParams(
+			RelativeLayout$LayoutParams#FILL_PARENT, RelativeLayout$LayoutParams#FILL_PARENT);
+		this#setContentView(layout, layoutParams);
+		(),
+		//this#setContentView(R$layout#activity_main);
+		//
+		//books = new BooksStorage(this#getBaseContext());
+		//
+		//shelfAdapter = new BooksDataAdapter(books#openCursor(0));
+		//this#findViewById(R$id#shelf2) unsafely_as ~ListView
+		//	#setAdapter(shelfAdapter);
+		//
+		//_ = (scanBooksTask this do progress:
+		//	shelfAdapter#requery();
+		//	shelfAdapter#notifyDataSetChanged();
+		//	this#setTitle("\(appName ()): scanned \(progress) book(s)")
+		//done) #execute([]),
 
 	boolean onCreateOptionsMenu(Menu menu)
 		this#getMenuInflater()#inflate(R$menu#main, menu);
