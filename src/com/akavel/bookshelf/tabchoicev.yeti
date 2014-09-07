@@ -134,21 +134,22 @@ class TabChoiceView(Context context, AttributeSet attrs) extends View(context, a
 		fill#setColor(Color#WHITE);
 		fill#setStyle(Paint$Style#FILL);
 		
+		draw i = (
+			canvas#drawPath(tabs[i], fill);
+			canvas#drawPath(tabs[i], stroke);
+			canvas#drawPath(icons[i], stroke)
+			);
+		
 		// draw background tabs
 		stroke#setColor(Color#GRAY);
-		for (reverse [0 .. length tabs - 1]) do i:
-			if i != currentTab then
-				canvas#drawPath(tabs[i], fill);
-				canvas#drawPath(tabs[i], stroke);
-				canvas#drawPath(icons[i], stroke);
-			fi
-		done;
+		[0 .. length tabs - 1]
+			|> filter (!= currentTab)
+			|> reverse
+			|> flip for draw;
 		
 		// draw foreground tab
 		stroke#setColor(Color#BLACK);
-		canvas#drawPath(tabs[currentTab], fill);
-		canvas#drawPath(tabs[currentTab], stroke);
-		canvas#drawPath(icons[currentTab], stroke);
+		draw currentTab;
 		
 		// draw "page edge"
 		bottom = h-strokeWidth/2;
