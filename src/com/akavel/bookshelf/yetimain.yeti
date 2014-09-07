@@ -70,6 +70,27 @@ class BooksDataAdapter(Cursor cursor) extends BaseAdapter
 		_ = cursor#requery(),  //FIXME: this method is deprecated
 end;
 
+class MainLayout(Context context, AttributeSet attrs) extends ViewGroup(context, attrs)
+    // Any layout manager that doesn't scroll will want this.
+	boolean shouldDelayChildPressedState() false,
+	
+	// Ask all children to measure themselves and compute the measurement of this
+	// layout based on the children.
+	//void onMeasure(int widthMeasureSpec, int heightMeasureSpec)
+
+	// Position all children within this layout.
+	//void onLayout(boolean changed, int l, int t, int r, int b)
+		/*
+Called from layout when this view should assign a size and position to each of its children. Derived classes with children should override this method and call layout on each of their children.
+Parameters
+changed 	This is a new size or position for this view
+l 	Left position, relative to parent
+t 	Top position, relative to parent
+r 	Right position, relative to parent
+b 	Bottom position, relative to parent 
+		*/
+end;
+
 import com.akavel.bookshelf.ScanBooksTask$OnProgressListener;
 
 class MainActivity extends FragmentActivity

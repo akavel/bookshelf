@@ -21,12 +21,22 @@ class BooksStorage(Context context) extends SQLiteOpenHelper(context, "bookshelf
 		// FIXME: use CURRENT_VERSION instead of '1' below
 		this#onUpgrade(db, 0, currentVersion);
 		
-		//FIXME: dummy value for testing; remove
+		//FIXME: dummy values for testing; remove
+		(
 		sample = new ContentValues();
 		sample#put(titleField, "Dżuma");
 		sample#put(authorField, "Albert Camus");
 		sample#put(pathField, "/mnt/foo/bar/dzuma.epub");
-		_ = db#insert(shelvesTable, (), sample),
+		_ = db#insert(shelvesTable, (), sample)
+		);
+		(
+		sample = new ContentValues();
+		sample#put("title", "Europa");
+		sample#put("author", "Norman Davies");
+		sample#put("path", "/mnt/foo/bar/europa.epub");
+		sample#put("shelf", -1);
+		_ = db#insert(shelvesTable, (), sample)
+		),
 	
 	targets oldv newv targetv =
 		(oldv <= (targetv - 1)) and (targetv <= newv),
