@@ -11,10 +11,11 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 import android.widget.LinearLayout;
-import android.widget.RelativeLayout;
-import android.widget.RelativeLayout$LayoutParams;
 import android.widget.ListView;
 import android.widget.TextView;
+
+import com.akavel.bookshelf.CustomLayout;
+import com.akavel.bookshelf.CustomLayout$LayoutParams;
 
 load com.akavel.bookshelf.scanbooks;
 load com.akavel.utils;
@@ -102,20 +103,24 @@ class MainActivity extends FragmentActivity
 		super#onCreate(state);
 		// WIP: starting with some sample how to build layout programmatically
 		// http://stackoverflow.com/a/4979362/98528
-		layout = new RelativeLayout(this);
+		layout = new CustomLayout(this);
 
 		text = new TextView(this);
 		text#setText("Test");
 		
-		textParams = new RelativeLayout$LayoutParams(
-			RelativeLayout$LayoutParams#WRAP_CONTENT, RelativeLayout$LayoutParams#WRAP_CONTENT);
-		textParams#addRule(RelativeLayout#CENTER_IN_PARENT);
+		textParams = new CustomLayout$LayoutParams(
+			CustomLayout$LayoutParams#WRAP_CONTENT, CustomLayout$LayoutParams#WRAP_CONTENT);
+		//textParams#addRule(CustomLayout#CENTER_IN_PARENT);
 		
 		text#setLayoutParams(textParams);
 		layout#addView(text);
 		
-		layoutParams = new RelativeLayout$LayoutParams(
-			RelativeLayout$LayoutParams#FILL_PARENT, RelativeLayout$LayoutParams#FILL_PARENT);
+		text2 = new TextView(this);
+		text2#setText("test 2");
+		layout#addView(text2, textParams);
+		
+		layoutParams = new CustomLayout$LayoutParams(
+			CustomLayout$LayoutParams#FILL_PARENT, CustomLayout$LayoutParams#FILL_PARENT);
 		this#setContentView(layout, layoutParams);
 		(),
 		//this#setContentView(R$layout#activity_main);
