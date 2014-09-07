@@ -73,6 +73,8 @@ end;
 import com.akavel.bookshelf.ScanBooksTask$OnProgressListener;
 
 class MainActivity extends FragmentActivity
+	appName _ = this#getResources()#getString(R$string#app_name),
+	
 	void onCreate(Bundle state)
 		super#onCreate(state);
 		this#setContentView(R$layout#activity_main);
@@ -83,13 +85,11 @@ class MainActivity extends FragmentActivity
 		this#findViewById(R$id#shelf2) unsafely_as ~ListView
 			#setAdapter(shelfAdapter);
 		
-		booksScan = scanBooksTask this do progress:
+		_ = (scanBooksTask this do progress:
 			shelfAdapter#requery();
 			shelfAdapter#notifyDataSetChanged();
-			title = this#getResources()#getString(R$string#app_name) ^ ": scanned \(progress) book(s)";
-			this#setTitle(title)
-		done;
-		_ = booksScan#execute([]),
+			this#setTitle("\(appName ()): scanned \(progress) book(s)")
+		done) #execute([]),
 
 	boolean onCreateOptionsMenu(Menu menu)
 		this#getMenuInflater()#inflate(R$menu#main, menu);
