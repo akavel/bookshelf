@@ -116,7 +116,7 @@ class MainActivity extends FragmentActivity
 		super#onCreate(state);
 		// WIP: starting with some sample how to build layout programmatically
 		// http://stackoverflow.com/a/4979362/98528
-		layout = new CustomLayout(this);
+		layout = new CustomLayout(this, ());
 
 		text = new TextView(this);
 		text#setText("Test");

@@ -1,0 +1,143 @@
+module com.akavel.bookshelf.layout;
+
+import android.content.Context;
+import android.content.res.TypedArray;
+import android.util.AttributeSet;
+import android.view.Gravity;
+import android.view.View;
+import android.view.ViewGroup;
+import android.view.ViewGroup$MarginLayoutParams;
+import android.widget.RemoteViews;
+import android.graphics.Rect;
+import android.support.v4.view.ViewCompat;
+import android.support.v4.view.GravityCompat;
+
+combineMeasuredStates curState newState = curState b_or newState;
+
+positionMiddle = 0;
+positionLeft = 1;
+positionRight = 2;
+
+//class CustomLayout$LayoutParams(Context c, AttributeSet attrs) extends ViewGroup$MarginLayoutParams(c, attrs)
+class CustomLayout$LayoutParams(int w, int h) extends ViewGroup$MarginLayoutParams(w, h)
+	var gravity = Gravity#TOP b_or GravityCompat#START,
+	var position = positionMiddle,
+	
+	int getGravity() gravity,
+	void setGravity(int g) gravity := g,
+	int getPosition() position,
+	void setPosition(int p) position := p,
+end;
+
+class CustomLayout(Context context, AttributeSet attrs) extends ViewGroup(context, attrs)
+	// The amount of space used by children in the left/right gutter.
+	var leftWidth = 0,
+	var rightWidth = 0,
+	
+	// Ask all children to measure themselves and compute the measurement of this
+	// layout based on the children.
+	void onMeasure(int widthMeasureSpec, int heightMeasureSpec)
+		count = this#getChildCount();
+		
+		// These keep track of the space we are using on the left and right for
+		// views positioned there; we need member variables so we can also use
+		// these for layout later.
+		leftWidth := 0;
+		rightWidth := 0;
+		
+		// Measurement will ultimately be computing these values.
+		var maxHeight = 0;
+		var maxWidth = 0;
+		var childState = 0;
+		
+		// Iterate through all children, measuring them and computing our dimensions
+		// from their size.
+		for [0 .. count-1] do i:
+			child = this#getChildAt(i);
+			if child#getVisibility() != ViewGroup#GONE then
+				// Measure the child.
+				this#measureChildWithMargins(child, widthMeasureSpec, 0, heightMeasureSpec, 0);
+				
+				// Update our size information based on the layout params.  Children
+				// that asked to be positioned on the left or right go in those gutters.
+				lp = child#getLayoutParams() unsafely_as ~CustomLayout$LayoutParams;
+				dw = max maxWidth (child#getMeasuredWidth() + lp#leftMargin + lp#rightMargin);	
+				if lp#getPosition() == positionLeft then
+					leftWidth := leftWidth + dw
+				elif lp#getPosition() == positionRight then
+					rightWidth := rightWidth + dw
+				else
+					maxWidth := maxWidth + dw
+				fi;
+				maxHeight := max maxHeight (child#getMeasuredHeight() + lp#topMargin + lp#bottomMargin);
+				childState := combineMeasuredStates childState ViewCompat#getMeasuredState(child)
+			fi
+		done;
+		
+		// Total width is the maximum width of all inner children plus the gutters.
+		maxWidth := maxWidth + leftWidth + rightWidth;
+		
+		// Check against our minimum height and width
+		maxHeight := max maxHeight this#getSuggestedMinimumHeight();
+		maxWidth := max maxWidth this#getSuggestedMinimumWidth();
+		
+		// Report our final dimensions.
+		this#setMeasuredDimension(
+			ViewCompat#resolveSizeAndState(maxWidth, widthMeasureSpec, childState),
+			ViewCompat#resolveSizeAndState(maxHeight, heightMeasureSpec,
+				childState shl ViewCompat#MEASURED_HEIGHT_STATE_SHIFT)),
+	
+	// Position all children within this layout.
+	void onLayout(boolean changed, int left, int top, int right, int bottom)
+		count = this#getChildCount();
+		
+		// These are the far left and right edges in which we are performing layout.
+		var leftPos = this#getPaddingLeft();
+		var rightPos = right - left - this#getPaddingRight();
+
+		// This is the middle region inside of the gutter.
+		middleLeft = leftPos + leftWidth;
+		middleRight = rightPos - rightWidth;
+
+		// These are the top and bottom edges in which we are performing layout.
+		parentTop = this#getPaddingTop();
+		parentBottom = bottom - top - this#getPaddingBottom();
+
+		var tmpContainerRect = new Rect();
+		var tmpChildRect = new Rect();
+		for [0 .. count-1] do i:
+			child = this#getChildAt(i);
+			if child#getVisibility() != ViewGroup#GONE then
+				lp = child#getLayoutParams() unsafely_as ~CustomLayout$LayoutParams;
+
+				width = child#getMeasuredWidth();
+				height = child#getMeasuredHeight();
+
+				// Compute the frame in which we are placing this child.
+				if lp#getPosition() == positionLeft then
+					tmpContainerRect#left := leftPos + lp#leftMargin;
+					tmpContainerRect#right := leftPos + width + lp#rightMargin;
+					leftPos := tmpContainerRect#right
+				elif lp#getPosition() == positionRight then
+					tmpContainerRect#right := rightPos - lp#rightMargin;
+					tmpContainerRect#left := rightPos - width - lp#leftMargin;
+					rightPos := tmpContainerRect#left
+				else
+					tmpContainerRect#left := middleLeft + lp#leftMargin;
+					tmpContainerRect#right := middleRight - lp#rightMargin
+				fi;
+				tmpContainerRect#top := parentTop + lp#topMargin;
+				tmpContainerRect#bottom := parentBottom - lp#bottomMargin;
+
+				// Use the child's gravity and size to determine its final
+				// frame within its container.
+				Gravity#apply(lp#getGravity(), width, height, tmpContainerRect, tmpChildRect);
+
+				// Place the child.
+				child#layout(tmpChildRect#left, tmpChildRect#top,
+					tmpChildRect#right, tmpChildRect#bottom)
+            fi
+        done,
+		
+	
+end;
