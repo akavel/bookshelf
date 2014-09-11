@@ -3,8 +3,10 @@ module com.akavel.bookshelf.layout;
 import android.content.Context;
 import android.content.res.TypedArray;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
+import android.view.View$MeasureSpec;
 import android.view.ViewGroup;
 import android.view.ViewGroup$MarginLayoutParams;
 import android.widget.RemoteViews;
@@ -17,6 +19,11 @@ combineMeasuredStates curState newState = curState b_or newState;
 positionMiddle = 0;
 positionLeft = 1;
 positionRight = 2;
+
+demode measureSpec = View$MeasureSpec#toString(measureSpec);
+	//(
+	//m = View$MeasureSpec#getMode(measureSpec);
+	//s = View$MeasureSpec#getSize(measureSpec);
 
 //class CustomLayout$LayoutParams(Context c, AttributeSet attrs) extends ViewGroup$MarginLayoutParams(c, attrs)
 class CustomLayout$LayoutParams(int w, int h) extends ViewGroup$MarginLayoutParams(w, h)
@@ -38,6 +45,7 @@ class CustomLayout(Context context, AttributeSet attrs) extends ViewGroup(contex
 	// layout based on the children.
 	void onMeasure(int widthMeasureSpec, int heightMeasureSpec)
 		count = this#getChildCount();
+		_ = Log#d("CustomLayout", "onMeasure, #children=\(count) w=\(demode widthMeasureSpec) h=\(demode heightMeasureSpec)");
 		
 		// These keep track of the space we are using on the left and right for
 		// views positioned there; we need member variables so we can also use
@@ -54,9 +62,14 @@ class CustomLayout(Context context, AttributeSet attrs) extends ViewGroup(contex
 		// from their size.
 		for [0 .. count-1] do i:
 			child = this#getChildAt(i);
+			_ = Log#d("CustomLayout", " child \(i)");
 			if child#getVisibility() != ViewGroup#GONE then
+				child#measure(View$MeasureSpec#UNSPECIFIED, View$MeasureSpec#UNSPECIFIED);
+				_ = Log#d("CustomLayout", "  unspec: \(child#getMeasuredWidth())x\(child#getMeasuredHeight())");
+			
 				// Measure the child.
 				this#measureChildWithMargins(child, widthMeasureSpec, 0, heightMeasureSpec, 0);
+				_ = Log#d("CustomLayout", "  w/marg: \(child#getMeasuredWidth())x\(child#getMeasuredHeight())");
 				
 				// Update our size information based on the layout params.  Children
 				// that asked to be positioned on the left or right go in those gutters.
