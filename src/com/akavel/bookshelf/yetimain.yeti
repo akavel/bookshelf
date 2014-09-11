@@ -73,6 +73,19 @@ class BooksDataAdapter(Cursor cursor) extends BaseAdapter
 		_ = cursor#requery(),  //FIXME: this method is deprecated
 end;
 
+// utils:
+// resolveSizeAndState(): given desired size, and external initial query, and "too small" flags from children, raises "too small" flag in result if necessary
+// protected getSuggestedMinimumHeight()/Width() -- ??
+// getVirtualChildCount(), getVirtualChildAt(i)
+// child.getLayoutParams()
+// child.getVisibility() == GONE
+// child.measure(...)
+// child.getMeasuredWidth()/Height()
+// childState = combineMeasuredStates(childState, child.getMeasuredState())
+// setMeasuredDimension(resolveSizeAndState(...), ...)
+// measureChildWithMargins(...) - given original ViewGroups measureSpecs, and internal "used space" inside ViewGroup, let child measure itself
+// child.layout(...)
+
 class MainLayout(Context context, AttributeSet attrs) extends ViewGroup(context, attrs)
     // Any layout manager that doesn't scroll will want this.
 	boolean shouldDelayChildPressedState() false,
