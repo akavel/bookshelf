@@ -132,9 +132,10 @@ As to width, we can probably pass the measurespec transparently; then return eit
 			for (children this |> filter visible) do child:
 				case (shynessOf child) of
 				Greedy ():
-					slot = excess / nGreedy;
+					h0 = (getMeasure child).h;
+					slot = h0 + excess / nGreedy;
 					{w, h} = measure (demode widthMeasureSpec) (AtMost slot) child;
-					excess := excess - h;
+					excess := excess - (h - h0);
 					nGreedy := nGreedy - 1;
 				_: ()
 				esac
@@ -142,9 +143,10 @@ As to width, we can probably pass the measurespec transparently; then return eit
 			for (children this |> filter visible) do child:
 				case (shynessOf child) of
 				Shy ():
-					slot = excess / nShy;
+					h0 = (getMeasure child).h;
+					slot = h0 + excess / nShy;
 					{w, h} = measure (demode widthMeasureSpec) (Exactly slot) child;
-					excess := excess - h;
+					excess := excess - (h - h0);
 					nShy := nShy - 1;
 				_: ()
 				esac
