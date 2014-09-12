@@ -159,7 +159,7 @@ extractMetadata path is string -> ~Book = (
 			
 			void onProgressUpdate(Object[] values)
 				new BooksStorage(context)
-					#merge(map' (unsafely_as ~Book) values);
+					#merge(values |> filter (_ o = o instanceof Book) |> map' (unsafely_as ~Book));
 				
 				progress := progress + (len values);
 				onProgressListener progress,
@@ -173,12 +173,8 @@ extractMetadata path is string -> ~Book = (
 					|> filter (flip strEnds? ".epub")
 					|> map' do path:
 						try
-							book = extractMetadata path;
-							if defined? book then
-								this#publishProgress([book])
-							fi
+							this#publishProgress([extractMetadata path])
 						catch Exception e:
-							e#printStackTrace();
 							_ = Log#e("ScanBooksTask", path, e)
 						yrt
 					done;
