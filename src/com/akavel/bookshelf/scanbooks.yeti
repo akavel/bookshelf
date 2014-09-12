@@ -13,6 +13,7 @@ import android.os.Build$VERSION;
 import android.os.Environment;
 import android.util.Log;
 
+load yeti.lang.io;
 load com.akavel.bookshelf.storage;
 load com.akavel.utils;
 
@@ -79,49 +80,74 @@ storageDirectories = (
 	keys rv
 	);
 
-walkZip path walker is string -> (string -> (() -> ~InputStream) -> boolean) -> () = (
+typedef zipEntry = {
+	path is string,
+	streamOpen is () -> ~InputStream,
+};
+
+zipOpen path is string -> {
+	close is () -> (),
+	files is () -> list<zipEntry>,
+} = (
 	zip = new ZipFile(new File(path));
-	try
-		entries = zip#getEntries();
-		var more = entries#hasMoreElements();
-		more loop (
-			entry = (entries#nextElement() unsafely_as ~ZipArchiveEntry);
-			path = entry#getName();
-			streamOpener _ = zip#getInputStream(entry);
-			more := (walker path streamOpener) and entries#hasMoreElements()
-		)
-	finally
-		zip#close()
-	yrt
-	);
+	entriesList entries is ~java.util.Enumeration -> list<zipEntry> =
+		if entries#hasMoreElements() then
+			entry = entries#nextElement() unsafely_as ~ZipArchiveEntry;
+			{
+				path = entry#getName(),
+				streamOpen () = zip#getInputStream(entry),
+			} :. \(entriesList entries)
+		else
+			[]
+		fi;
+	{
+		close () = zip#close(),
+		files () = entriesList zip#getEntries(),
+	});
 
 basename path is string -> string = new File(path)#getName();
+
+parseXml inputStream is ~InputStream -> ~org.w3c.dom.Document = (
+	doc = DocumentBuilderFactory
+		#newInstance()
+		#newDocumentBuilder()
+		#parse(inputStream);
+	doc#normalize();
+	doc);
+
+initXPath namespaces dom is hash<string, string> -> ~org.w3c.dom.Document -> {get is string -> string} = (
+	ctx = JXPathContext#newContext(dom);
+	forHash namespaces do k v:
+		ctx#registerNamespace(k, v)
+	done;
+	{
+		get = do xpath: ctx#getValue(xpath)#toString() done,
+	});
 
 extractMetadata path is string -> ~Book = (
 	log.d "ScanBooksTask" "extracting from zip: \(path)";
 	var title = "";
 	var author = "";
-	walkZip path do path streamOpener:
-		if basename path == "content.opf" then
-			doc = DocumentBuilderFactory
-				#newInstance()
-				#newDocumentBuilder()
-				#parse(streamOpener ());
-			doc#normalize();
-			
-			ctx = JXPathContext#newContext(doc);
-			ctx#registerNamespace("dc", "http://purl.org/dc/elements/1.1/");
-			
-			title := ctx#getValue("//dc:title")#toString();
-			log.d "ScanBooksTask" "\(path) - title=\(title)";
-			
-			author := ctx#getValue("//dc:creator")#toString();
-			log.d "ScanBooksTask" "\(path) - author=\(author)";
-			
-			false
-		else
-			true
-		fi
+	withHandle (zipOpen path) do zip:
+		_ = zip.files ()
+		|> filter do f: f.path |> basename |> (== "content.opf") done
+		|> take 1
+		|> map' do f:
+			stream = f.streamOpen ();
+			try
+				xpath = stream
+					|> parseXml
+					|> initXPath ["dc": "http://purl.org/dc/elements/1.1/"];
+				
+				title := xpath.get "//dc:title";
+				log.d "ScanBooksTask" "\(path) - title=\(title)";
+				
+				author := xpath.get "//dc:creator";
+				log.d "ScanBooksTask" "\(path) - author=\(author)";
+			finally
+				stream#close()
+			yrt
+		done
 	done;
 	new Book(title, author, path)
 	);
