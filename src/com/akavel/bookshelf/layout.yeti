@@ -104,7 +104,7 @@ As to width, we can probably pass the measurespec transparently; then return eit
 			log.d "MainLayout" "  \(m): \(w)x\(h)";
 			
 			maxW := max maxW w;
-			minH := minH + h
+			minH := minH + h;
 			
 			case (shynessOf child) of
 			Greedy (): nGreedy := nGreedy + 1;
@@ -122,14 +122,14 @@ As to width, we can probably pass the measurespec transparently; then return eit
 		//FIXME: handle case where limitH < minH
 		
 		case limitH of
-		Unspecified:
+		None ():
 			this#setMeasuredDimension(
 				View#resolveSize(maxW, widthMeasureSpec),
 				minH);
 		Some h:
 			var excess = h - minH;
 			log.d "MainLayout" "excess = \(excess), #greedy = \(nGreedy), #shy = \(nShy)";
-			for (children () |> filter visible) do child:
+			for (children this |> filter visible) do child:
 				case (shynessOf child) of
 				Greedy ():
 					slot = excess / nGreedy;
@@ -139,7 +139,7 @@ As to width, we can probably pass the measurespec transparently; then return eit
 				_: ()
 				esac
 			done;
-			for (children () |> filter visible) do child:
+			for (children this |> filter visible) do child:
 				case (shynessOf child) of
 				Shy ():
 					slot = excess / nShy;
