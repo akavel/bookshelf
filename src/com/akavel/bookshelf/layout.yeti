@@ -23,15 +23,13 @@ positionMiddle = 0;
 positionLeft = 1;
 positionRight = 2;
 
-//demode measureSpec = View$MeasureSpec#toString(measureSpec);
-//	//(
-//	//m = View$MeasureSpec#getMode(measureSpec);
-//	//s = View$MeasureSpec#getSize(measureSpec);
 demode measureSpec = case View$MeasureSpec#getMode(measureSpec) of
 	View$MeasureSpec#AT_MOST: AtMost View$MeasureSpec#getSize(measureSpec);
 	View$MeasureSpec#EXACTLY: Exactly View$MeasureSpec#getSize(measureSpec);
 	_: Unspecified ()
 	esac;
+	
+visible v is ~View -> boolean = v#getVisibility() != ViewGroup#GONE;
 
 typedef shyness = Greedy () | Fixed () | Shy ();
 
@@ -113,30 +111,29 @@ class CustomLayout(Context context, AttributeSet attrs) extends ViewGroup(contex
 		
 		// Iterate through all children, measuring them and computing our dimensions
 		// from their size.
-		for (children this) do child:
+		for (children this |> filter visible) do child:
 			log.d "CustomLayout" " child";
-			if child#getVisibility() != ViewGroup#GONE then
-				child#measure(View$MeasureSpec#UNSPECIFIED, View$MeasureSpec#UNSPECIFIED);
-				_ = Log#d("CustomLayout", "  unspec: \(child#getMeasuredWidth())x\(child#getMeasuredHeight())");
+
+			child#measure(View$MeasureSpec#UNSPECIFIED, View$MeasureSpec#UNSPECIFIED);
+			_ = Log#d("CustomLayout", "  unspec: \(child#getMeasuredWidth())x\(child#getMeasuredHeight())");
+		
+			// Measure the child.
+			this#measureChildWithMargins(child, widthMeasureSpec, 0, heightMeasureSpec, 0);
+			_ = Log#d("CustomLayout", "  w/marg: \(child#getMeasuredWidth())x\(child#getMeasuredHeight())");
 			
-				// Measure the child.
-				this#measureChildWithMargins(child, widthMeasureSpec, 0, heightMeasureSpec, 0);
-				_ = Log#d("CustomLayout", "  w/marg: \(child#getMeasuredWidth())x\(child#getMeasuredHeight())");
-				
-				// Update our size information based on the layout params.  Children
-				// that asked to be positioned on the left or right go in those gutters.
-				lp = child#getLayoutParams() unsafely_as ~CustomLayout$LayoutParams;
-				dw = max maxWidth (child#getMeasuredWidth() + lp#leftMargin + lp#rightMargin);	
-				if lp#getPosition() == positionLeft then
-					leftWidth := leftWidth + dw
-				elif lp#getPosition() == positionRight then
-					rightWidth := rightWidth + dw
-				else
-					maxWidth := maxWidth + dw
-				fi;
-				maxHeight := max maxHeight (child#getMeasuredHeight() + lp#topMargin + lp#bottomMargin);
-				childState := combineMeasuredStates childState ViewCompat#getMeasuredState(child)
-			fi
+			// Update our size information based on the layout params.  Children
+			// that asked to be positioned on the left or right go in those gutters.
+			lp = child#getLayoutParams() unsafely_as ~CustomLayout$LayoutParams;
+			dw = max maxWidth (child#getMeasuredWidth() + lp#leftMargin + lp#rightMargin);	
+			if lp#getPosition() == positionLeft then
+				leftWidth := leftWidth + dw
+			elif lp#getPosition() == positionRight then
+				rightWidth := rightWidth + dw
+			else
+				maxWidth := maxWidth + dw
+			fi;
+			maxHeight := max maxHeight (child#getMeasuredHeight() + lp#topMargin + lp#bottomMargin);
+			childState := combineMeasuredStates childState ViewCompat#getMeasuredState(child)
 		done;
 		
 		// Total width is the maximum width of all inner children plus the gutters.
@@ -170,41 +167,36 @@ class CustomLayout(Context context, AttributeSet attrs) extends ViewGroup(contex
 
 		var tmpContainerRect = new Rect();
 		var tmpChildRect = new Rect();
-		for [0 .. count-1] do i:
-			child = this#getChildAt(i);
-			if child#getVisibility() != ViewGroup#GONE then
-				lp = child#getLayoutParams() unsafely_as ~CustomLayout$LayoutParams;
+		for (children this |> filter visible) do child:
+			lp = child#getLayoutParams() unsafely_as ~CustomLayout$LayoutParams;
 
-				width = child#getMeasuredWidth();
-				height = child#getMeasuredHeight();
+			width = child#getMeasuredWidth();
+			height = child#getMeasuredHeight();
 
-				// Compute the frame in which we are placing this child.
-				if lp#getPosition() == positionLeft then
-					tmpContainerRect#left := leftPos + lp#leftMargin;
-					tmpContainerRect#right := leftPos + width + lp#rightMargin;
-					leftPos := tmpContainerRect#right
-				elif lp#getPosition() == positionRight then
-					tmpContainerRect#right := rightPos - lp#rightMargin;
-					tmpContainerRect#left := rightPos - width - lp#leftMargin;
-					rightPos := tmpContainerRect#left
-				else
-					tmpContainerRect#left := middleLeft + lp#leftMargin;
-					tmpContainerRect#right := middleRight - lp#rightMargin
-				fi;
-				tmpContainerRect#top := parentTop + lp#topMargin;
-				tmpContainerRect#bottom := parentBottom - lp#bottomMargin;
+			// Compute the frame in which we are placing this child.
+			if lp#getPosition() == positionLeft then
+				tmpContainerRect#left := leftPos + lp#leftMargin;
+				tmpContainerRect#right := leftPos + width + lp#rightMargin;
+				leftPos := tmpContainerRect#right
+			elif lp#getPosition() == positionRight then
+				tmpContainerRect#right := rightPos - lp#rightMargin;
+				tmpContainerRect#left := rightPos - width - lp#leftMargin;
+				rightPos := tmpContainerRect#left
+			else
+				tmpContainerRect#left := middleLeft + lp#leftMargin;
+				tmpContainerRect#right := middleRight - lp#rightMargin
+			fi;
+			tmpContainerRect#top := parentTop + lp#topMargin;
+			tmpContainerRect#bottom := parentBottom - lp#bottomMargin;
 
-				// Use the child's gravity and size to determine its final
-				// frame within its container.
-				Gravity#apply(lp#getGravity(), width, height, tmpContainerRect, tmpChildRect);
+			// Use the child's gravity and size to determine its final
+			// frame within its container.
+			Gravity#apply(lp#getGravity(), width, height, tmpContainerRect, tmpChildRect);
 
-				// Place the child.
-				child#layout(tmpChildRect#left, tmpChildRect#top,
-					tmpChildRect#right, tmpChildRect#bottom)
-            fi
+			// Place the child.
+			child#layout(tmpChildRect#left, tmpChildRect#top,
+				tmpChildRect#right, tmpChildRect#bottom)
         done,
-		
-	
 end;
 
 { mainLayoutParams, shynessFromLayoutParams }
