@@ -30,4 +30,8 @@ load yeti.lang.io;
 			fi
 		done,
 
+	log = {
+		d g s = _ = Log#d(g, s),
+		i g s = _ = Log#i(g, s),
+	},
 }
