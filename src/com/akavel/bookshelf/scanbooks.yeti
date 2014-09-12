@@ -140,10 +140,10 @@ extractMetadata path is string -> ~Book = (
 					|> initXPath ["dc": "http://purl.org/dc/elements/1.1/"];
 				
 				title := xpath.get "//dc:title";
-				log.d "ScanBooksTask" "\(path) - title=\(title)";
+				log.d "ScanBooksTask" "\(f.path) - title=\(title)";
 				
 				author := xpath.get "//dc:creator";
-				log.d "ScanBooksTask" "\(path) - author=\(author)";
+				log.d "ScanBooksTask" "\(f.path) - author=\(author)";
 			finally
 				stream#close()
 			yrt
