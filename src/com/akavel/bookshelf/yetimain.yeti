@@ -117,29 +117,40 @@ class MainActivity extends FragmentActivity
 		super#onCreate(state);
 		
 		layout = new MainLayout(this, ());
+		
+		lifted = new ListView(this);
+		layout#addView(lifted, mainLayoutParams (Greedy ()));
 
 		text = new TextView(this);
 		text#setText("Test");
-		layout#addView(text, mainLayoutParams (Shy ()));
+		layout#addView(text, mainLayoutParams (Fixed ()));
 		
 		text2 = new TextView(this);
 		text2#setText("test 2");
 		layout#addView(text2, mainLayoutParams (Fixed ()));
 		
 		shelf = new ListView(this);
-		layout#addView(shelf, mainLayoutParams (Greedy ()));
+		layout#addView(shelf, mainLayoutParams (Shy ()));
+		
+		text3 = new TextView(this);
+		text3#setText("test 3");
+		layout#addView(text3, mainLayoutParams (Fixed ()));
 		
 		layoutParams = new CustomLayout$LayoutParams(
 			CustomLayout$LayoutParams#FILL_PARENT, CustomLayout$LayoutParams#FILL_PARENT);
 		this#setContentView(layout, layoutParams);
 		
-		shelfAdapter = new BooksDataAdapter(new BooksStorage(this#getBaseContext())#openCursor(0));
+		storage = new BooksStorage(this#getBaseContext());
+
+		shelfAdapter = new BooksDataAdapter(storage#openCursor(0));
 		shelf#setAdapter(shelfAdapter);
 		_ = (scanBooksTask this do progress:
 			shelfAdapter#requery();
 			shelfAdapter#notifyDataSetChanged();
 			this#setTitle("\(appName ()): scanned \(progress) book(s)")
 		done) #execute([]);
+		
+		lifted#setAdapter(new BooksDataAdapter(storage#openCursor(-1)));
 		
 		(),
 
