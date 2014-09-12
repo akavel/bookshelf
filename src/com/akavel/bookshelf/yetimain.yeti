@@ -15,9 +15,6 @@ import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
 
-import com.akavel.bookshelf.CustomLayout;
-import com.akavel.bookshelf.CustomLayout$LayoutParams;
-
 load com.akavel.bookshelf.scanbooks;
 load com.akavel.bookshelf.layout;
 load com.akavel.utils;
@@ -29,6 +26,7 @@ class BookView(Book book, Context context, AttributeSet attrs) extends LinearLay
 	_ = (context#getSystemService(Context#LAYOUT_INFLATER_SERVICE) unsafely_as ~LayoutInflater)
 			#inflate(R$layout#layout_book, self ());
 		(self ()) #update(book),
+
 	void update(Book book)
 		if not nullptr? book then
 			setText R$id#title book#title;
@@ -75,8 +73,6 @@ class BooksDataAdapter(Cursor cursor) extends BaseAdapter
 		_ = cursor#requery(),  //FIXME: this method is deprecated
 end;
 
-
-import com.akavel.bookshelf.ScanBooksTask$OnProgressListener;
 
 class MainActivity extends FragmentActivity
 	appName _ = this#getResources()#getString(R$string#app_name),

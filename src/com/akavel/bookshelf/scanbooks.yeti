@@ -94,42 +94,41 @@ walkZip path walker is string -> (string -> (() -> ~InputStream) -> boolean) -> 
 		zip#close()
 	yrt
 	);
-	
-basename path is string -> string = (
-	new File(path)#getName()
+
+basename path is string -> string = new File(path)#getName();
+
+extractMetadata path is string -> ~Book = (
+	log.d "ScanBooksTask" "extracting from zip: \(path)";
+	var title = "";
+	var author = "";
+	walkZip path do path streamOpener:
+		if basename path == "content.opf" then
+			doc = DocumentBuilderFactory
+				#newInstance()
+				#newDocumentBuilder()
+				#parse(streamOpener ());
+			doc#normalize();
+			
+			ctx = JXPathContext#newContext(doc);
+			ctx#registerNamespace("dc", "http://purl.org/dc/elements/1.1/");
+			
+			title := ctx#getValue("//dc:title")#toString();
+			log.d "ScanBooksTask" "\(path) - title=\(title)";
+			
+			author := ctx#getValue("//dc:creator")#toString();
+			log.d "ScanBooksTask" "\(path) - author=\(author)";
+			
+			false
+		else
+			true
+		fi
+	done;
+	new Book(title, author, path)
 	);
-	
+
 {
 	scanBooksTask context onProgressListener =
 		class ScanBooksTask extends AsyncTask
-			extractMetadata path is string -> ~Book =
-				_ = Log#d("ScanBooksTask", "extracting from zip: \(path)");
-				var title = "";
-				var author = "";
-				walkZip path do path streamOpener:
-					if basename path == "content.opf" then
-						doc = DocumentBuilderFactory
-							#newInstance()
-							#newDocumentBuilder()
-							#parse(streamOpener ());
-						doc#normalize();
-						
-						ctx = JXPathContext#newContext(doc);
-						ctx#registerNamespace("dc", "http://purl.org/dc/elements/1.1/");
-						
-						title := ctx#getValue("//dc:title")#toString();
-						_ = Log#d("ScanBooksTask", "\(path) - title=\(title)");
-						
-						author := ctx#getValue("//dc:creator")#toString();
-						_ = Log#d("ScanBooksTask", "\(path) - author=\(author)");
-						
-						false
-					else
-						true
-					fi
-				done;
-				new Book(title, author, path),
-			
 			var progress = 0,
 			
 			void onProgressUpdate(Object[] values)
@@ -141,7 +140,7 @@ basename path is string -> string = (
 			
 			scan path =
 				walkFilesRecursive path do path:
-					_ = Log#i("ScanBooksTask", "file: \(path)");
+					log.i "ScanBooksTask" "file: \(path)";
 					if strEnds? path ".epub" then
 						try
 							book = extractMetadata path;
@@ -158,7 +157,7 @@ basename path is string -> string = (
 			Object doInBackground(Object[] args)
 				//TODO: detect if `storageDirectories` is empty, and maybe throw exception or something; maybe use "/" ?
 				for storageDirectories scan;
-				Log#d("ScanBooksTask", "scanning finished."),
+				log.d "ScanBooksTask" "scanning finished.",
 		end;
 		new ScanBooksTask(),
 }
