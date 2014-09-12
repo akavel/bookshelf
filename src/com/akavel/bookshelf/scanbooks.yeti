@@ -138,10 +138,14 @@ extractMetadata path is string -> ~Book = (
 				progress := progress + (len values);
 				onProgressListener progress,
 			
-			scan path =
-				walkFilesRecursive path do path:
-					log.i "ScanBooksTask" "file: \(path)";
-					if strEnds? path ".epub" then
+			Object doInBackground(Object[] args)
+				//TODO: detect if `storageDirectories` is empty, and maybe throw exception or something; maybe use "/" ?
+				_ = storageDirectories
+					|> map iterateFilesRecursively
+					|> concat
+					|> map (do path: log.i "ScanBooksTask" "file: \(path)"; path done)
+					|> filter (flip strEnds? ".epub")
+					|> map' do path:
 						try
 							book = extractMetadata path;
 							if defined? book then
@@ -151,12 +155,7 @@ extractMetadata path is string -> ~Book = (
 							e#printStackTrace();
 							_ = Log#e("ScanBooksTask", path, e)
 						yrt
-					fi
-				done,
-			
-			Object doInBackground(Object[] args)
-				//TODO: detect if `storageDirectories` is empty, and maybe throw exception or something; maybe use "/" ?
-				for storageDirectories scan;
+					done;
 				log.d "ScanBooksTask" "scanning finished.",
 		end;
 		new ScanBooksTask(),

@@ -19,16 +19,27 @@ load yeti.lang.io;
 					listener v;
 			end;
 			new Click())),
-	
-	walkFilesRecursive dir walker is string -> (string -> ()) -> () =
-		for (listDirectory false dir) do f:
-			if f.directory? then
-				_ = Log#i("ScanBooksTask", "Scanning dir: \(f.path)");
-				walkFilesRecursive f.path walker
-			else
-				walker f.path
-			fi
-		done,
+
+	iterateFilesRecursively dir is string -> list<string> = (
+		dirList = listDirectory false;
+		depthFirstSearch =
+			\case of
+			(f :: files) :: dirs:
+				rest = files :: dirs;
+				if f.directory? then
+					dirList f.path
+						|> (:: rest)
+						|> depthFirstSearch
+				else
+					f.path :. \(depthFirstSearch rest)
+				fi;
+			[] :: dirs:
+				depthFirstSearch dirs;
+			_:
+				[]
+			esac;
+		depthFirstSearch [dirList dir]
+		),
 
 	log = {
 		d g s = _ = Log#d(g, s),
