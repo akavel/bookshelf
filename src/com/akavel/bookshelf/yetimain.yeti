@@ -135,6 +135,7 @@ class MainActivity extends FragmentActivity
 		shelf = new ListView(this);
 		layout#addView(shelf, new CustomLayout$LayoutParams(
 			CustomLayout$LayoutParams#FILL_PARENT, CustomLayout$LayoutParams#WRAP_CONTENT));
+//			CustomLayout$LayoutParams#FILL_PARENT, CustomLayout$LayoutParams#FILL_PARENT));
 		
 		layoutParams = new CustomLayout$LayoutParams(
 			CustomLayout$LayoutParams#FILL_PARENT, CustomLayout$LayoutParams#FILL_PARENT);

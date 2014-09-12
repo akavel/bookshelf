@@ -23,10 +23,16 @@ positionMiddle = 0;
 positionLeft = 1;
 positionRight = 2;
 
+typedef measureSpec = AtMost number | Exactly number | Unspecified ();
 demode measureSpec = case View$MeasureSpec#getMode(measureSpec) of
 	View$MeasureSpec#AT_MOST: AtMost View$MeasureSpec#getSize(measureSpec);
 	View$MeasureSpec#EXACTLY: Exactly View$MeasureSpec#getSize(measureSpec);
 	_: Unspecified ()
+	esac;
+enmode measureSpec = case measureSpec of
+	AtMost n: View$MeasureSpec#makeMeasureSpec(n, View$MeasureSpec#AT_MOST);
+	Exactly n: View$MeasureSpec#makeMeasureSpec(n, View$MeasureSpec#EXACTLY);
+	Unspecified (): View$MeasureSpec#makeMeasureSpec(0, View$MeasureSpec#UNSPECIFIED)
 	esac;
 	
 visible v is ~View -> boolean = v#getVisibility() != ViewGroup#GONE;
@@ -41,30 +47,112 @@ mainLayoutParams shy is shyness -> ~ViewGroup$LayoutParams =
 	new MainLayout$LayoutParams(shy as ~yeti.lang.Tag);
 shynessFromLayoutParams p is ~ViewGroup$LayoutParams -> shyness =
 	(p unsafely_as ~MainLayout$LayoutParams)#getTag() unsafely_as shyness;
+shynessOf v is ~View -> shyness =
+	shynessFromLayoutParams v#getLayoutParams();
 
 children g is ~ViewGroup -> list<~View> = (
 	next i = if i >= g#getChildCount() then []
 		else g#getChildAt(i) :. \(next (i + 1)) fi;
 	next 0);
+getMeasure v is ~View -> {w is number, h is number} = (
+	result = { w = v#getMeasuredWidth(), h = v#getMeasuredHeight() };
+	log.d "MainLayout" "... getMeasure(\(v#getClass())) = \(result)";
+	result);
+measure w h v is measureSpec -> measureSpec -> ~View -> {w is number, h is number} = (
+	log.d "MainLayout" "... measure(\(w),\(h))";
+	v#measure(enmode w, enmode h);
+	getMeasure v);
 
 class MainLayout(Context context, AttributeSet attrs) extends ViewGroup(context, attrs)
 
 	// Ask all children to measure themselves and compute the measurement of this
 	// layout based on the children.
 	void onMeasure(int widthMeasureSpec, int heightMeasureSpec)
-		count = this#getChildCount(); //TODO: use `children ()`
-		log.d "MainLayout" "onMeasure, #children=\(count) w=\(demode widthMeasureSpec) h=\(demode heightMeasureSpec)";
+		log.d "MainLayout" "onMeasure, #children=\(this#getChildCount()) w=\(demode widthMeasureSpec) h=\(demode heightMeasureSpec)";
 		
 		//TODO: handle widthMeasureSpec
 		
-		for [0 .. count - 1] do i:
-			child = this#getChildAt(i);
-			log.d "MainLayout" " child \(i)";
-			if child#getVisibility() != ViewGroup#GONE then //TODO: use std lib `filter` or something similar
-				
-			fi
+		//TODO: handle Exactly/AtMost/Unspecified
+		//TODO: leave children with final measurements
+		//TODO: take into account our own getLayoutParams()
+
+/*
+Notes:
+- if we're queried with Unspecified, we'd like to return "max h" and get it from our children;
+	- but for now, given that it's simpler, we'll return what we have from children.
+- if we're queried with Exactly/AtMost, we'd like to get both min & max h from our children, then try to fit in queried h;
+
+In first pass, we must measure minimal H & available excess (the latter only if h AtMost/Exact).
+We are also obliged to call .measure on all children.
+
+In second pass, we need to re-measure all Greedy children to their final heights.
+
+As to width, we can probably pass the measurespec transparently; then return either max of children (if Unspecified), or min(max of children, queried w) in remaining cases.
+*/
+		
+		// First pass: sum children's minimal heights, so that we could calculate excess,
+		// and also find max over children's width, to have something to return.
+		var maxW = 0;
+		var minH = 0;
+		var nGreedy = 0;
+		var nShy = 0;
+		for (children this |> filter visible) do child:
+			log.d "MainLayout" " child";
+			
+			m = Unspecified ();
+			{w, h} = measure (demode widthMeasureSpec) m child;
+			log.d "MainLayout" "  \(m): \(w)x\(h)";
+			
+			maxW := max maxW w;
+			minH := minH + h
+			
+			case (shynessOf child) of
+			Greedy (): nGreedy := nGreedy + 1;
+			Shy (): nShy := nShy + 1;
+			_: ()
+			esac
 		done;
 		
+		limitH = case (demode heightMeasureSpec) of
+			AtMost n: Some n;
+			Exactly n: Some n;
+			Unspecified: None ()
+		esac;
+		
+		//FIXME: handle case where limitH < minH
+		
+		case limitH of
+		Unspecified:
+			this#setMeasuredDimension(
+				View#resolveSize(maxW, widthMeasureSpec),
+				minH);
+		Some h:
+			var excess = h - minH;
+			log.d "MainLayout" "excess = \(excess), #greedy = \(nGreedy), #shy = \(nShy)";
+			for (children () |> filter visible) do child:
+				case (shynessOf child) of
+				Greedy ():
+					slot = excess / nGreedy;
+					{w, h} = measure (demode widthMeasureSpec) (AtMost slot) child;
+					excess := excess - h;
+					nGreedy := nGreedy - 1;
+				_: ()
+				esac
+			done;
+			for (children () |> filter visible) do child:
+				case (shynessOf child) of
+				Shy ():
+					slot = excess / nShy;
+					{w, h} = measure (demode widthMeasureSpec) (Exactly slot) child;
+					excess := excess - h;
+					nShy := nShy - 1;
+				_: ()
+				esac
+			done;
+			this#setMeasuredDimension(
+				View#resolveSize(maxW, widthMeasureSpec),
+				h - excess)
+		esac;
 		//// Check against our minimum height and width
 		//maxHeight := max maxHeight this#getSuggestedMinimumHeight();
 		//maxWidth := max maxWidth this#getSuggestedMinimumWidth();
@@ -74,6 +162,18 @@ class MainLayout(Context context, AttributeSet attrs) extends ViewGroup(context,
 		//	ViewCompat#resolveSizeAndState(maxWidth, widthMeasureSpec, childState),
 		//	ViewCompat#resolveSizeAndState(maxHeight, heightMeasureSpec,
 		//		childState shl ViewCompat#MEASURED_HEIGHT_STATE_SHIFT))
+		(),
+		
+	// Position all children within this layout.
+	void onLayout(boolean changed, int left, int top, int right, int bottom)
+		log.d "MainLayout" "onLayout(left=\(left), top=\(top), right=\(right), bottom=\(bottom))";
+		var topMargin = 0;
+		for (children this |> filter visible) do child:
+			{w, h} = getMeasure child;
+			//s = shynessOf child;
+			child#layout(left, top + topMargin, right, top + h);
+			topMargin := topMargin + h
+		done;
 		(),
 end;
 
@@ -114,17 +214,23 @@ class CustomLayout(Context context, AttributeSet attrs) extends ViewGroup(contex
 		for (children this |> filter visible) do child:
 			log.d "CustomLayout" " child";
 
+			(
+			xx = View$MeasureSpec#makeMeasureSpec(0, View$MeasureSpec#AT_MOST);
+			child#measure(xx, xx);
+			log.d "CustomLayout" "  \(demode xx): \(child#getMeasuredWidth())x\(child#getMeasuredHeight())"
+			);
+
 			child#measure(View$MeasureSpec#UNSPECIFIED, View$MeasureSpec#UNSPECIFIED);
-			_ = Log#d("CustomLayout", "  unspec: \(child#getMeasuredWidth())x\(child#getMeasuredHeight())");
-		
+			log.d "CustomLayout" "  unspec: \(child#getMeasuredWidth())x\(child#getMeasuredHeight())";
+
 			// Measure the child.
 			this#measureChildWithMargins(child, widthMeasureSpec, 0, heightMeasureSpec, 0);
-			_ = Log#d("CustomLayout", "  w/marg: \(child#getMeasuredWidth())x\(child#getMeasuredHeight())");
+			log.d "CustomLayout" "  w/marg: \(child#getMeasuredWidth())x\(child#getMeasuredHeight())";
 			
 			// Update our size information based on the layout params.  Children
 			// that asked to be positioned on the left or right go in those gutters.
 			lp = child#getLayoutParams() unsafely_as ~CustomLayout$LayoutParams;
-			dw = max maxWidth (child#getMeasuredWidth() + lp#leftMargin + lp#rightMargin);	
+			dw = max maxWidth (child#getMeasuredWidth() + lp#leftMargin + lp#rightMargin);
 			if lp#getPosition() == positionLeft then
 				leftWidth := leftWidth + dw
 			elif lp#getPosition() == positionRight then
@@ -151,8 +257,6 @@ class CustomLayout(Context context, AttributeSet attrs) extends ViewGroup(contex
 	
 	// Position all children within this layout.
 	void onLayout(boolean changed, int left, int top, int right, int bottom)
-		count = this#getChildCount();
-		
 		// These are the far left and right edges in which we are performing layout.
 		var leftPos = this#getPaddingLeft();
 		var rightPos = right - left - this#getPaddingRight();
