@@ -9,6 +9,7 @@ import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewGroup$LayoutParams;
 import android.widget.BaseAdapter;
 import android.widget.LinearLayout;
 import android.widget.ListView;
@@ -136,8 +137,8 @@ class MainActivity extends FragmentActivity
 		text3#setText("test 3");
 		layout#addView(text3, mainLayoutParams (Fixed ()));
 		
-		layoutParams = new CustomLayout$LayoutParams(
-			CustomLayout$LayoutParams#FILL_PARENT, CustomLayout$LayoutParams#FILL_PARENT);
+		layoutParams = new ViewGroup$LayoutParams(
+			ViewGroup$LayoutParams#FILL_PARENT, ViewGroup$LayoutParams#FILL_PARENT);
 		this#setContentView(layout, layoutParams);
 		
 		storage = new BooksStorage(this#getBaseContext());
