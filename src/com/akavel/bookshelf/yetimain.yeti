@@ -18,6 +18,7 @@ import com.akavel.bookshelf.CustomLayout;
 import com.akavel.bookshelf.CustomLayout$LayoutParams;
 
 load com.akavel.bookshelf.scanbooks;
+load com.akavel.bookshelf.layout;
 load com.akavel.utils;
 
 class BookView(Book book, Context context, AttributeSet attrs) extends LinearLayout(context, attrs)
@@ -114,28 +115,19 @@ class MainActivity extends FragmentActivity
 	
 	void onCreate(Bundle state)
 		super#onCreate(state);
-		// WIP: starting with some sample how to build layout programmatically
-		// http://stackoverflow.com/a/4979362/98528
-		layout = new CustomLayout(this, ());
+		
+		layout = new MainLayout(this, ());
 
 		text = new TextView(this);
 		text#setText("Test");
-		
-		textParams = new CustomLayout$LayoutParams(
-			CustomLayout$LayoutParams#WRAP_CONTENT, CustomLayout$LayoutParams#WRAP_CONTENT);
-		//textParams#addRule(CustomLayout#CENTER_IN_PARENT);
-		
-		text#setLayoutParams(textParams);
-		layout#addView(text);
+		layout#addView(text, mainLayoutParams (Shy ()));
 		
 		text2 = new TextView(this);
 		text2#setText("test 2");
-		layout#addView(text2, textParams);
+		layout#addView(text2, mainLayoutParams (Fixed ()));
 		
 		shelf = new ListView(this);
-		layout#addView(shelf, new CustomLayout$LayoutParams(
-			CustomLayout$LayoutParams#FILL_PARENT, CustomLayout$LayoutParams#WRAP_CONTENT));
-//			CustomLayout$LayoutParams#FILL_PARENT, CustomLayout$LayoutParams#FILL_PARENT));
+		layout#addView(shelf, mainLayoutParams (Greedy ()));
 		
 		layoutParams = new CustomLayout$LayoutParams(
 			CustomLayout$LayoutParams#FILL_PARENT, CustomLayout$LayoutParams#FILL_PARENT);

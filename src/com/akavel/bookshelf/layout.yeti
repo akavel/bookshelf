@@ -167,12 +167,12 @@ As to width, we can probably pass the measurespec transparently; then return eit
 	// Position all children within this layout.
 	void onLayout(boolean changed, int left, int top, int right, int bottom)
 		log.d "MainLayout" "onLayout(left=\(left), top=\(top), right=\(right), bottom=\(bottom))";
-		var topMargin = 0;
+		var childTop = top;
 		for (children this |> filter visible) do child:
 			{w, h} = getMeasure child;
 			//s = shynessOf child;
-			child#layout(left, top + topMargin, right, top + h);
-			topMargin := topMargin + h
+			child#layout(left, childTop, right, childTop + h);
+			childTop := childTop + h
 		done;
 		(),
 end;
@@ -303,4 +303,4 @@ class CustomLayout(Context context, AttributeSet attrs) extends ViewGroup(contex
         done,
 end;
 
-{ mainLayoutParams, shynessFromLayoutParams }
+{ mainLayoutParams }
