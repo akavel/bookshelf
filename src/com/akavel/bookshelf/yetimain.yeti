@@ -111,6 +111,12 @@ class MainActivity extends FragmentActivity
 			this#setTitle("\(appName ()): scanned \(progress) book(s)")
 		done) #execute([]);
 		
+		tabs#addOnTabChangedListener((class L extends TabChoiceView$OnTabChangedListener
+			void onTabChanged(int i)
+				shelf#setAdapter(new BooksDataAdapter(storage#openCursor(i)))
+			end;
+			new L()));
+		
 		lifted#setAdapter(new BooksDataAdapter(storage#openCursor(-1)));
 		
 		(),

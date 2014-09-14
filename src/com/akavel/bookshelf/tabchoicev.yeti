@@ -20,6 +20,10 @@ borderW = 20;
 picH = 80;
 strokeWidth = 3.0;
 
+class TabChoiceView$OnTabChangedListener
+	abstract void onTabChanged(int i)
+end;
+
 class TabChoiceView(Context context, AttributeSet attrs) extends View(context, attrs)
 	var currentTab = 0,
 	
@@ -156,6 +160,15 @@ class TabChoiceView(Context context, AttributeSet attrs) extends View(context, a
 		canvas#drawLine(0, bottom, currentTab*wUnit*(picW+borderW), bottom, stroke);
 		canvas#drawLine((currentTab+1)*wUnit*(picW+borderW)+wUnit*borderW, bottom, w, bottom, stroke),
 	
+	listeners is array<~TabChoiceView$OnTabChangedListener> = array [],
+	fireListeners i =
+		for listeners do l:
+			l#onTabChanged(i)
+		done,
+	
+	void addOnTabChangedListener(TabChoiceView$OnTabChangedListener listener)
+		push listeners listener,
+	
 	boolean onTouchEvent(MotionEvent event)
 		//FIXME: "If this method is used to detect click actions, it is recommended that the actions be performed by implementing and calling performClick(). This will ensure consistent system behavior, including (...)"
 		if not MotionEventCompat#getActionMasked(event) `inList`  [
@@ -175,6 +188,7 @@ class TabChoiceView(Context context, AttributeSet attrs) extends View(context, a
 			newtab = checkFrom 0;
 			if newtab != currentTab and newtab < length tabs then
 				currentTab := newtab;
+				fireListeners newtab;
 				this#invalidate() // FIXME: are we in UI thread?
 			fi;
 			true
