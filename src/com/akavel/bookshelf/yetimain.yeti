@@ -82,23 +82,20 @@ class MainActivity extends FragmentActivity
 		
 		layout = new MainLayout(this, ());
 		
+		pages1 = new PageSelectorView(this, ());
+		layout#addView(pages1, mainLayoutParams (Fixed ()));
+		
 		lifted = new ListView(this);
 		layout#addView(lifted, mainLayoutParams (Greedy ()));
 
-		text = new TextView(this);
-		text#setText("Test");
-		layout#addView(text, mainLayoutParams (Fixed ()));
-		
-		text2 = new TextView(this);
-		text2#setText("test 2");
-		layout#addView(text2, mainLayoutParams (Fixed ()));
+		tabs = new TabChoiceView(this, ());
+		layout#addView(tabs, mainLayoutParams (Fixed ()));
 		
 		shelf = new ListView(this);
 		layout#addView(shelf, mainLayoutParams (Shy ()));
 		
-		text3 = new TextView(this);
-		text3#setText("test 3");
-		layout#addView(text3, mainLayoutParams (Fixed ()));
+		pages2 = new PageSelectorView(this, ());
+		layout#addView(pages2, mainLayoutParams (Fixed ()));
 		
 		layoutParams = new ViewGroup$LayoutParams(
 			ViewGroup$LayoutParams#FILL_PARENT, ViewGroup$LayoutParams#FILL_PARENT);
