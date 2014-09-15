@@ -124,17 +124,17 @@ As to width, we can probably pass the measurespec transparently; then return eit
 		Some h:
 			countdown n =
 				iterate (_ x = x-1) n;
-			distribute nchildren shyness how pixels =
+			distribute nchildren shy how pixels =
 				children this
 				|> filter visible
-				|> filter ((shyness ==) . shynessOf)
+				|> filter ((shy ==) . shynessOf)
 				|> map2 (_ n child = {n, child}) (countdown nchildren)
-				|> fold do pixels {n, child}:
+				|> flip fold pixels do pixels {n, child}:
 					h0 = child |> getMeasure |> (.h);
-					slot = h0 + pixels / n;
-					deltah = (measure (demode widthMeasureSpec) (how slot) child).h - h0;
+					slot = h0 + pixels / n |> how;
+					deltah = (measure (demode widthMeasureSpec) slot child).h - h0;
 					pixels - deltah
-				done pixels;
+				done;
 			excess = h - minH;
 			log.d "MainLayout" "excess = \(excess), #greedy = \(nGreedy), #shy = \(nShy)";
 			leftovers =
