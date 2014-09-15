@@ -1,0 +1,39 @@
+module com.akavel.drawing;
+
+import android.graphics.Path;
+import android.graphics.Path$Direction;
+
+typedef point = {x is number, y is number};
+typedef drawing =
+	MoveTo point |
+	LineTo point |
+	RLineTo point |
+	Close () |
+	Circle {x is number, y is number, r is number} |
+	Rect {x1 is number, y1 is number, x2 is number, y2 is number} |
+	Path {x is number, y is number, path is list?<drawing>};
+
+renderPath description is list?<drawing> -> ~Path = (
+	p = new Path();
+	for description \case of
+	MoveTo {x, y}:
+		p#moveTo(x, y);
+	LineTo {x, y}:
+		p#lineTo(x, y);
+	RLineTo {x, y}:
+		p#rLineTo(x, y);
+	Close ():
+		p#close();
+	Circle {x, y, r}:
+		p#addCircle(x, y, r, Path$Direction#CCW);
+	Rect {x1, y1, x2, y2}:
+		p#addRect(x1, y1, x2, y2, Path$Direction#CCW);
+	Path {x, y, path}:
+		p#addPath(renderPath path, x, y);
+	esac;
+	p
+	);
+
+{
+	renderPath,
+}

@@ -6,7 +6,6 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Paint$Style;
 import android.graphics.Path;
-import android.graphics.Path$Direction;
 import android.support.v4.view.MotionEventCompat;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
@@ -14,6 +13,7 @@ import android.view.View;
 import android.view.View$MeasureSpec;
 
 load com.akavel.utils;
+load com.akavel.drawing;
 
 picW = 80;
 borderW = 20;
@@ -52,40 +52,39 @@ class TabChoiceView(Context context, AttributeSet attrs) extends View(context, a
 	var wUnit = 0.0,
 	
 	prepareDrawing _ =
-		star icon midx midy arm
-				is ~Path -> number -> number -> number -> () = (
-			arms = 6;
-			for [0 .. arms-1] do i:
-				angle = i*pi*2/arms;
-				icon#moveTo(midx, midy);
-				icon#rLineTo(arm*(cos angle), arm*(sin angle));
-				//icon#lineTo(midx+arm*Math.cos(angle), midy)
-			done
+		star midx midy arm = (
+			arms = 6; [0 .. arms-1]
+				|> map (_ i = i*pi*2/arms)
+				|> map (_ angle =
+					[
+						MoveTo {x=midx, y=midy},
+						RLineTo {x=arm*(cos angle), y=arm*(sin angle)},
+					])
+				|> concat
 			);
-		circle icon midx midy arm
-				is ~Path -> number -> number -> number -> () = (
-			icon#addCircle(midx, midy, arm, Path$Direction#CCW)
-			);
-		triangle icon midx midy arm
-				is ~Path -> number -> number -> number -> () = (
+		circle midx midy arm =
+			[ Circle {x=midx, y=midy, r=arm} ];
+			//icon#addCircle(midx, midy, arm, Path$Direction#CCW)
+		triangle midx midy arm = (
 			h = 2*arm * (sqrt 3)/2;
-			icon#moveTo(midx, midy-arm);
-			icon#rLineTo(arm, h);
-			icon#rLineTo(-2*arm, 0);
-			icon#close()
-			);
-		square icon midx midy arm
-				is ~Path -> number -> number -> number -> () = (
+			[
+				MoveTo {x=midx, y=midy-arm},
+				RLineTo {x=arm, y=h},
+				RLineTo {x= -2*arm, y=0},
+				Close (),
+			]);
+		square midx midy arm = (
 			arm2 = arm*0.8;
-			icon#addRect(midx-arm2, midy-arm2, midx+arm2, midy+arm2, Path$Direction#CCW)
+			[ Rect {x1=midx-arm2, y1=midy-arm2, x2=midx+arm2, y2=midy+arm2} ]
+			//icon#addRect(midx-arm2, midy-arm2, midx+arm2, midy+arm2, Path$Direction#CCW)
 			);
-		slash icon midx midy arm
-				is ~Path -> number -> number -> number -> () = (
+		slash midx midy arm = (
 			dx = arm*0.7;
 			dy = arm*0.9;
-			icon#moveTo(midx-dx, midy+dy);
-			icon#lineTo(midx+dx, midy-dy);
-			);
+			[
+				MoveTo {x=midx-dx, y=midy+dy},
+				LineTo {x=midx+dx, y=midy-dy},
+			]);
 			
 		
 		shapes = array [star, circle, triangle, square, slash];
@@ -98,23 +97,21 @@ class TabChoiceView(Context context, AttributeSet attrs) extends View(context, a
 			shapes
 			|> flip map2 (iterate (+1) 0) do i shape: 
 				midx = wUnit*(borderW+picW/2) + i*wUnit*(borderW+picW);
-				path = new Path();
-				shape path midx midy arm;
-				path
+				shape midx midy arm |> renderPath;
 			done;
 		
-		tab = new Path();
-		tab#moveTo(0, h - strokeWidth/2);
-		tab#lineTo(wUnit*borderW, strokeWidth/2);
-		tab#lineTo(wUnit*(borderW+picW), strokeWidth/2);
-		tab#lineTo(wUnit*(borderW+picW+borderW), h-strokeWidth/2);
+		tab = [
+			MoveTo {x = 0, y = h-strokeWidth/2},
+			LineTo {x = wUnit*borderW, y = strokeWidth/2},
+			LineTo {x = wUnit*(borderW+picW), y = strokeWidth/2},
+			LineTo {x = wUnit*(borderW+picW+borderW), y = h-strokeWidth/2},
+		];
 		
 		tabs =
 			[0 .. n-1]
 			|> map do i:
-				path = new Path();
-				path#addPath(tab, i*wUnit*(borderW+picW), 0);
-				path
+				x = i*wUnit*(borderW+picW);
+				renderPath [ Path {path=tab, x, y=0} ]
 			done;
 		{icons, tabs, wUnit},
 	
