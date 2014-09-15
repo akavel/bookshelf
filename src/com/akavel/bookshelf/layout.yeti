@@ -132,7 +132,7 @@ As to width, we can probably pass the measurespec transparently; then return eit
 				|> flip fold pixels do pixels {n, child}:
 					h0 = child |> getMeasure |> (.h);
 					slot = h0 + pixels / n |> how;
-					deltah = (measure (demode widthMeasureSpec) slot child).h - h0;
+					deltah = child |> measure (demode widthMeasureSpec) slot |> (.h) |> flip (-) h0;
 					pixels - deltah
 				done;
 			excess = h - minH;
