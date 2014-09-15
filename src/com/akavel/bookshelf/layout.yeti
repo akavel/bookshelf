@@ -124,28 +124,26 @@ As to width, we can probably pass the measurespec transparently; then return eit
 		Some h:
 			var excess = h - minH;
 			log.d "MainLayout" "excess = \(excess), #greedy = \(nGreedy), #shy = \(nShy)";
-			for (children this |> filter visible) do child:
-				case (shynessOf child) of
-				Greedy ():
+			children this
+				|> filter visible
+				|> filter ((Greedy () ==) . shynessOf)
+				|> flip for do child:
 					h0 = (getMeasure child).h;
 					slot = h0 + excess / nGreedy;
 					{w, h} = measure (demode widthMeasureSpec) (AtMost slot) child;
 					excess := excess - (h - h0);
 					nGreedy := nGreedy - 1;
-				_: ()
-				esac
-			done;
-			for (children this |> filter visible) do child:
-				case (shynessOf child) of
-				Shy ():
+				done;
+			children this
+				|> filter visible
+				|> filter ((Shy () ==) . shynessOf)
+				|> flip for do child:
 					h0 = (getMeasure child).h;
 					slot = h0 + excess / nShy;
 					{w, h} = measure (demode widthMeasureSpec) (Exactly slot) child;
 					excess := excess - (h - h0);
 					nShy := nShy - 1;
-				_: ()
-				esac
-			done;
+				done;
 			this#setMeasuredDimension(
 				View#resolveSize(maxW, widthMeasureSpec),
 				h - excess)
