@@ -150,13 +150,14 @@ As to width, we can probably pass the measurespec transparently; then return eit
 	// Position all children within this layout.
 	void onLayout(boolean changed, int left, int top, int right, int bottom)
 		log.d "MainLayout" "onLayout(left=\(left), top=\(top), right=\(right), bottom=\(bottom))";
-		var childTop = top;
-		for (children this |> filter visible) do child:
-			{w, h} = getMeasure child;
-			//s = shynessOf child;
-			child#layout(left, childTop, right, childTop + h);
-			childTop := childTop + h
-		done;
+		_ = children this
+			|> filter visible
+			|> flip fold top do top child:
+				h = child |> getMeasure |> (.h);
+				bottom = top + h + 1;  // exclusive, I believe
+				child#layout(left, top, right, bottom);
+				bottom
+			done;
 		(),
 end;
 
