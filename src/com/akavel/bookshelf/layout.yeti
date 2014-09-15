@@ -122,31 +122,28 @@ As to width, we can probably pass the measurespec transparently; then return eit
 				View#resolveSize(maxW, widthMeasureSpec),
 				minH);
 		Some h:
-			var excess = h - minH;
+			countdown n =
+				iterate (_ x = x-1) n;
+			distribute nchildren shyness how pixels =
+				children this
+				|> filter visible
+				|> filter ((shyness ==) . shynessOf)
+				|> map2 (_ n child = {n, child}) (countdown nchildren)
+				|> fold do pixels {n, child}:
+					h0 = child |> getMeasure |> (.h);
+					slot = h0 + pixels / n;
+					deltah = (measure (demode widthMeasureSpec) (how slot) child).h - h0;
+					pixels - deltah
+				done pixels;
+			excess = h - minH;
 			log.d "MainLayout" "excess = \(excess), #greedy = \(nGreedy), #shy = \(nShy)";
-			children this
-				|> filter visible
-				|> filter ((Greedy () ==) . shynessOf)
-				|> flip for do child:
-					h0 = (getMeasure child).h;
-					slot = h0 + excess / nGreedy;
-					{w, h} = measure (demode widthMeasureSpec) (AtMost slot) child;
-					excess := excess - (h - h0);
-					nGreedy := nGreedy - 1;
-				done;
-			children this
-				|> filter visible
-				|> filter ((Shy () ==) . shynessOf)
-				|> flip for do child:
-					h0 = (getMeasure child).h;
-					slot = h0 + excess / nShy;
-					{w, h} = measure (demode widthMeasureSpec) (Exactly slot) child;
-					excess := excess - (h - h0);
-					nShy := nShy - 1;
-				done;
+			leftovers =
+				excess
+				|> distribute nGreedy (Greedy ()) (AtMost)
+				|> distribute nShy (Shy ()) (Exactly);
 			this#setMeasuredDimension(
 				View#resolveSize(maxW, widthMeasureSpec),
-				h - excess)
+				h - leftovers)
 		esac;
 		(),
 		
