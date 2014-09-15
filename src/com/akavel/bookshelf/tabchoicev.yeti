@@ -47,8 +47,8 @@ class TabChoiceView(Context context, AttributeSet attrs) extends View(context, a
 	var w = 0,
 	var h = 0,
 	
-	tabs = array [],
-	icons = array [],
+	var tabs = array [],
+	var icons = array [],
 	var wUnit = 0.0,
 	
 	prepareDrawing _ =
@@ -91,21 +91,17 @@ class TabChoiceView(Context context, AttributeSet attrs) extends View(context, a
 		shapes = array [star, circle, triangle, square, slash];
 		n = length shapes;
 
-		wUnit := w / (n*picW + (n+1)*borderW);
+		wUnit = w / (n*picW + (n+1)*borderW);
 		arm = (min h wUnit*picW)*0.7/2;
 		midy = h/2;
-		renderTo array shapes =
-			if length array < length shapes then
-				i = length array;
+		icons =
+			shapes
+			|> flip map2 (iterate (+1) 0) do i shape: 
 				midx = wUnit*(borderW+picW/2) + i*wUnit*(borderW+picW);
 				path = new Path();
-				shapes[i] path midx midy arm;
-				push array path;
-				renderTo array shapes
-			fi;
-		
-		clearArray icons;
-		renderTo icons shapes;
+				shape path midx midy arm;
+				path
+			done;
 		
 		tab = new Path();
 		tab#moveTo(0, h - strokeWidth/2);
@@ -113,17 +109,22 @@ class TabChoiceView(Context context, AttributeSet attrs) extends View(context, a
 		tab#lineTo(wUnit*(borderW+picW), strokeWidth/2);
 		tab#lineTo(wUnit*(borderW+picW+borderW), h-strokeWidth/2);
 		
-		clearArray tabs;
-		for [0 .. n-1] do i:
-			p = new Path();
-			p#addPath(tab, i*wUnit*(borderW+picW), 0);
-			push tabs p;
-		done,
+		tabs =
+			[0 .. n-1]
+			|> map do i:
+				path = new Path();
+				path#addPath(tab, i*wUnit*(borderW+picW), 0);
+				path
+			done;
+		{icons, tabs, wUnit},
 	
 	void onSizeChanged(int w_, int h_, int oldw, int oldh)
 		w := w_;
 		h := h_;
-		prepareDrawing (),
+		prep = prepareDrawing ();
+		icons := array prep.icons;
+		tabs := array prep.tabs;
+		wUnit := prep.wUnit,
 	
 	void onDraw(Canvas canvas)
 		canvas#drawColor(Color#WHITE);
