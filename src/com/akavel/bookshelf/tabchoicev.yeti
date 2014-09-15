@@ -20,6 +20,69 @@ borderW = 20;
 picH = 80;
 strokeWidth = 3.0;
 
+prepareDrawing w h = (
+	star midx midy arm = (
+		arms = 6; [0 .. arms-1]
+			|> map (_ i = i*pi*2/arms)
+			|> map (_ angle =
+				[
+					MoveTo {x=midx, y=midy},
+					RLineTo {x=arm*(cos angle), y=arm*(sin angle)},
+				])
+			|> concat
+		);
+	circle midx midy arm =
+		[ Circle {x=midx, y=midy, r=arm} ];
+	triangle midx midy arm = (
+		h = 2*arm * (sqrt 3)/2;
+		[
+			MoveTo {x=midx, y=midy-arm},
+			RLineTo {x=arm, y=h},
+			RLineTo {x= -2*arm, y=0},
+			Close (),
+		]);
+	square midx midy arm = (
+		arm2 = arm*0.8;
+		[ Rect {x1=midx-arm2, y1=midy-arm2, x2=midx+arm2, y2=midy+arm2} ]
+		);
+	slash midx midy arm = (
+		dx = arm*0.7;
+		dy = arm*0.9;
+		[
+			MoveTo {x=midx-dx, y=midy+dy},
+			LineTo {x=midx+dx, y=midy-dy},
+		]);
+		
+	
+	shapes = array [star, circle, triangle, square, slash];
+	n = length shapes;
+
+	wUnit = w / (n*picW + (n+1)*borderW);
+	arm = (min h wUnit*picW)*0.7/2;
+	midy = h/2;
+	icons =
+		shapes
+		|> flip map2 (iterate (+1) 0) do i shape: 
+			midx = wUnit*(borderW+picW/2) + i*wUnit*(borderW+picW);
+			shape midx midy arm |> renderPath;
+		done;
+	
+	tab = [
+		MoveTo {x = 0, y = h-strokeWidth/2},
+		LineTo {x = wUnit*borderW, y = strokeWidth/2},
+		LineTo {x = wUnit*(borderW+picW), y = strokeWidth/2},
+		LineTo {x = wUnit*(borderW+picW+borderW), y = h-strokeWidth/2},
+	];
+	
+	tabs =
+		[0 .. n-1]
+		|> map do i:
+			x = i*wUnit*(borderW+picW);
+			renderPath [ Path {path=tab, x, y=0} ]
+		done;
+	{icons, tabs, wUnit}
+	);
+
 class TabChoiceView$OnTabChangedListener
 	abstract void onTabChanged(int i)
 end;
@@ -51,74 +114,10 @@ class TabChoiceView(Context context, AttributeSet attrs) extends View(context, a
 	var icons = array [],
 	var wUnit = 0.0,
 	
-	prepareDrawing _ =
-		star midx midy arm = (
-			arms = 6; [0 .. arms-1]
-				|> map (_ i = i*pi*2/arms)
-				|> map (_ angle =
-					[
-						MoveTo {x=midx, y=midy},
-						RLineTo {x=arm*(cos angle), y=arm*(sin angle)},
-					])
-				|> concat
-			);
-		circle midx midy arm =
-			[ Circle {x=midx, y=midy, r=arm} ];
-			//icon#addCircle(midx, midy, arm, Path$Direction#CCW)
-		triangle midx midy arm = (
-			h = 2*arm * (sqrt 3)/2;
-			[
-				MoveTo {x=midx, y=midy-arm},
-				RLineTo {x=arm, y=h},
-				RLineTo {x= -2*arm, y=0},
-				Close (),
-			]);
-		square midx midy arm = (
-			arm2 = arm*0.8;
-			[ Rect {x1=midx-arm2, y1=midy-arm2, x2=midx+arm2, y2=midy+arm2} ]
-			//icon#addRect(midx-arm2, midy-arm2, midx+arm2, midy+arm2, Path$Direction#CCW)
-			);
-		slash midx midy arm = (
-			dx = arm*0.7;
-			dy = arm*0.9;
-			[
-				MoveTo {x=midx-dx, y=midy+dy},
-				LineTo {x=midx+dx, y=midy-dy},
-			]);
-			
-		
-		shapes = array [star, circle, triangle, square, slash];
-		n = length shapes;
-
-		wUnit = w / (n*picW + (n+1)*borderW);
-		arm = (min h wUnit*picW)*0.7/2;
-		midy = h/2;
-		icons =
-			shapes
-			|> flip map2 (iterate (+1) 0) do i shape: 
-				midx = wUnit*(borderW+picW/2) + i*wUnit*(borderW+picW);
-				shape midx midy arm |> renderPath;
-			done;
-		
-		tab = [
-			MoveTo {x = 0, y = h-strokeWidth/2},
-			LineTo {x = wUnit*borderW, y = strokeWidth/2},
-			LineTo {x = wUnit*(borderW+picW), y = strokeWidth/2},
-			LineTo {x = wUnit*(borderW+picW+borderW), y = h-strokeWidth/2},
-		];
-		
-		tabs =
-			[0 .. n-1]
-			|> map do i:
-				x = i*wUnit*(borderW+picW);
-				renderPath [ Path {path=tab, x, y=0} ]
-			done;
-		{icons, tabs, wUnit},
-	
 	void onSizeChanged(int w_, int h_, int oldw, int oldh)
 		w := w_;
 		h := h_;
-		prep = prepareDrawing ();
+		prep = prepareDrawing w h;
 		icons := array prep.icons;
 		tabs := array prep.tabs;
 		wUnit := prep.wUnit,
