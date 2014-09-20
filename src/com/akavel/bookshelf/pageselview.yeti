@@ -3,6 +3,7 @@ module com.akavel.bookshelf.pageselview;
 import android.content.Context;
 import android.util.AttributeSet;
 import android.view.LayoutInflater;
+import android.view.View;
 import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.ListView;
@@ -10,10 +11,12 @@ import android.widget.TextView;
 
 load com.akavel.utils;
 
+// http://stackoverflow.com/a/2679284/98528
+getListItemView list
+	is ~ListView -> ~View =
+	list#getChildAt(list#getHeaderViewsCount());
+
 class PageSelectorView(Context context, AttributeSet attrs) extends LinearLayout(context, attrs)
-	//var currentPage = 1,
-	//var totalPages = 4,
-	
 	var buttonUp is ~Button = () unsafely_as ~Button,
 	var buttonDown is ~Button = () unsafely_as ~Button,
 	
@@ -28,29 +31,6 @@ class PageSelectorView(Context context, AttributeSet attrs) extends LinearLayout
 			#setText("\(current)/\(total)");
 		this#invalidate(),
 	
-	///// NOTE: call only from UI thread.
-	//update _ =
-	//	viewById this R$id#page_selector_view_info unsafely_as ~TextView
-	//		#setText("\(currentPage)/\(totalPages)");
-	//	buttonUp#setEnabled(currentPage > 1);
-	//	buttonDown#setEnabled(currentPage < totalPages);
-	//	this#invalidate(),
-	
-	setListeners _ =
-		//setOnClickListener (viewById this R$id#page_selector_view_up) do v:
-		//	if currentPage > 1 then
-		//		currentPage := currentPage - 1;
-		//		update ()
-		//	fi
-		//done;
-		//setOnClickListener (viewById this R$id#page_selector_view_down) do v:
-		//	if currentPage < totalPages then
-		//		currentPage := currentPage + 1;
-		//		update ()
-		//	fi
-		//done;
-		(),
-		
 	inflate _ =
 		_ = LayoutInflater
 			#from(context)
@@ -59,9 +39,12 @@ class PageSelectorView(Context context, AttributeSet attrs) extends LinearLayout
 	_ =
 		inflate ();
 		findViews ();
-		setListeners ();
-		//update (),
 		(),
+	
+	itemsOnPage list is ~ListView -> number =
+		hlist = list#getMeasuredHeight();
+		hitem = (getListItemView list)#getMeasuredHeight(); //TODO: add divider height?
+		hlist / hitem |> int,
 	
 	void link(ListView list)
 		bu = buttonUp; // workaround for a bug in Yeti compiler resolving captures in below class
@@ -78,6 +61,18 @@ class PageSelectorView(Context context, AttributeSet attrs) extends LinearLayout
 			void onScrollStateChanged(android.widget.AbsListView v, int scrollState)
 				(),
 			end; new L()));
+		setOnClickListener bd do v:
+			n = itemsOnPage list;
+			i = list#getFirstVisiblePosition() + n
+				|> min (list#getCount() - 1);
+			i = list#getLastVisiblePosition();
+			list#setSelectionFromTop(i, 0)
+		done;
+		setOnClickListener bu do v:
+			n = itemsOnPage list;
+			i = list#getFirstVisiblePosition() - n |> max 0;
+			list#setSelectionFromTop(i, 0)
+		done;
 		//TODO: also add to listview's onDataChangedListeners
 		(),
 
