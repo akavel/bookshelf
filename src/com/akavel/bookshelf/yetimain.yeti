@@ -73,7 +73,6 @@ class BooksDataAdapter(Cursor cursor) extends BaseAdapter
 		_ = cursor#requery(),  //FIXME: this method is deprecated
 end;
 
-
 class MainActivity extends FragmentActivity
 	appName _ = this#getResources()#getString(R$string#app_name),
 	
@@ -96,7 +95,10 @@ class MainActivity extends FragmentActivity
 		
 		pages2 = new PageSelectorView(this, ());
 		layout#addView(pages2, mainLayoutParams (Fixed ()));
-		
+
+		pages1#link(lifted);
+		pages2#link(shelf);
+
 		layoutParams = new ViewGroup$LayoutParams(
 			ViewGroup$LayoutParams#FILL_PARENT, ViewGroup$LayoutParams#FILL_PARENT);
 		this#setContentView(layout, layoutParams);

@@ -12,7 +12,12 @@
         android:layout_marginRight="@dimen/activity_horizontal_margin"
         android:text="Title"
         android:textAppearance="?android:attr/textAppearanceLarge"
-        android:textStyle="bold" />
+        android:textStyle="bold" 
+        android:lines="1"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:singleLine="true"
+        />
 
     <TextView
         android:id="@+id/author"
@@ -31,6 +36,11 @@
         android:layout_marginLeft="@dimen/activity_horizontal_margin"
         android:layout_marginRight="@dimen/activity_horizontal_margin"
         android:text="/file/path"
-        android:textAppearance="?android:attr/textAppearanceSmall" />
+        android:textAppearance="?android:attr/textAppearanceSmall"
+        android:lines="1"
+        android:maxLines="1"
+        android:ellipsize="start"
+        android:singleLine="true"
+        />
 
 </LinearLayout>

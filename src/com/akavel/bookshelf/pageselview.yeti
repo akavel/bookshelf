@@ -5,43 +5,79 @@ import android.util.AttributeSet;
 import android.view.LayoutInflater;
 import android.widget.Button;
 import android.widget.LinearLayout;
+import android.widget.ListView;
 import android.widget.TextView;
 
 load com.akavel.utils;
 
 class PageSelectorView(Context context, AttributeSet attrs) extends LinearLayout(context, attrs)
-	var currentPage = 0,
-	pagesCount = 4,
+	//var currentPage = 1,
+	//var totalPages = 4,
 	
-	/// NOTE: call only from UI thread.
-	update _ =
+	var buttonUp is ~Button = () unsafely_as ~Button,
+	var buttonDown is ~Button = () unsafely_as ~Button,
+	
+	findViews _ =
+		buttonUp :=
+			viewById this R$id#page_selector_view_up unsafely_as ~Button;
+		buttonDown :=
+			viewById this R$id#page_selector_view_down unsafely_as ~Button,
+	
+	setLabel current total =
 		viewById this R$id#page_selector_view_info unsafely_as ~TextView
-			#setText("\(currentPage + 1)/\(pagesCount)");
-		viewById this R$id#page_selector_view_up unsafely_as ~Button
-			#setEnabled(currentPage > 0);
-		viewById this R$id#page_selector_view_down unsafely_as ~Button
-			#setEnabled(currentPage < (pagesCount - 1));
+			#setText("\(current)/\(total)");
 		this#invalidate(),
 	
+	///// NOTE: call only from UI thread.
+	//update _ =
+	//	viewById this R$id#page_selector_view_info unsafely_as ~TextView
+	//		#setText("\(currentPage)/\(totalPages)");
+	//	buttonUp#setEnabled(currentPage > 1);
+	//	buttonDown#setEnabled(currentPage < totalPages);
+	//	this#invalidate(),
+	
 	setListeners _ =
-		setOnClickListener (viewById this R$id#page_selector_view_up) do v:
-			if currentPage > 0 then
-				currentPage := currentPage - 1;
-				update ()
-			fi
-		done;
-		setOnClickListener (viewById this R$id#page_selector_view_down) do v:
-			if currentPage < (pagesCount - 1) then
-				currentPage := currentPage + 1;
-				update ()
-			fi
-		done,
+		//setOnClickListener (viewById this R$id#page_selector_view_up) do v:
+		//	if currentPage > 1 then
+		//		currentPage := currentPage - 1;
+		//		update ()
+		//	fi
+		//done;
+		//setOnClickListener (viewById this R$id#page_selector_view_down) do v:
+		//	if currentPage < totalPages then
+		//		currentPage := currentPage + 1;
+		//		update ()
+		//	fi
+		//done;
+		(),
 		
 	inflate _ =
-		_ = LayoutInflater#from(context)#inflate(R$layout#layout_page_selector_view, this),
+		_ = LayoutInflater
+			#from(context)
+			#inflate(R$layout#layout_page_selector_view, this),
 
 	_ =
 		inflate ();
+		findViews ();
 		setListeners ();
-		update (),
+		//update (),
+		(),
+	
+	void link(ListView list)
+		list#setOnScrollListener((class L extends android.widget.AbsListView$OnScrollListener
+			void onScroll(android.widget.AbsListView v, int firstVisible, int visibleCount, int totalCount)
+				empty = (visibleCount == 0) or (totalCount == 0);
+				current = if empty then 1 else firstVisible fi;
+				total = if empty then 1 else totalCount fi;
+				setLabel current total;
+				buttonUp#setEnabled(current > 1);
+				buttonDown#setEnabled(current + visibleCount <= totalCount);
+				(),
+			void onScrollStateChanged(android.widget.AbsListView v, int scrollState)
+				(),
+			end; new L()));
+		//TODO: also add to listview's onDataChangedListeners
+		(),
+
+
 end;
