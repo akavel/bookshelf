@@ -105,8 +105,6 @@ zipOpen path is string -> {
 		files () = entriesList zip#getEntries(),
 	});
 
-basename path is string -> string = new File(path)#getName();
-
 parseXml inputStream is ~InputStream -> ~org.w3c.dom.Document = (
 	doc = DocumentBuilderFactory
 		#newInstance()
@@ -126,11 +124,30 @@ initXPath namespaces dom is hash<string, string> -> ~org.w3c.dom.Document -> {ge
 
 extractMetadata path is string -> ~Book = (
 	log.d "ScanBooksTask" "extracting from zip: \(path)";
+	
+	// find what's the path to the "content.opf" file
+	rootpath is string = withHandle (zipOpen path) do zip:
+		zip.files ()
+		|> filter do f: f.path == "META-INF/container.xml" done
+		|> map do f:
+			stream = f.streamOpen ();
+			try
+				stream
+					|> parseXml
+					|> initXPath ["cn": "urn:oasis:names:tc:opendocument:xmlns:container"]
+					|> flip (.get) "/cn:container/cn:rootfiles/cn:rootfile/@full-path"
+			finally
+				stream#close()
+			yrt
+		done
+		|> head
+	done;
+	
 	var title = "";
 	var author = "";
 	withHandle (zipOpen path) do zip:
 		_ = zip.files ()
-		|> filter do f: f.path |> basename |> (== "content.opf") done
+		|> filter do f: f.path == rootpath done
 		|> take 1
 		|> map' do f:
 			stream = f.streamOpen ();
