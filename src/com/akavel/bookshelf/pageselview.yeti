@@ -64,14 +64,16 @@ class PageSelectorView(Context context, AttributeSet attrs) extends LinearLayout
 		(),
 	
 	void link(ListView list)
+		bu = buttonUp; // workaround for a bug in Yeti compiler resolving captures in below class
+		bd = buttonDown;
 		list#setOnScrollListener((class L extends android.widget.AbsListView$OnScrollListener
 			void onScroll(android.widget.AbsListView v, int firstVisible, int visibleCount, int totalCount)
 				empty = (visibleCount == 0) or (totalCount == 0);
-				current = if empty then 1 else firstVisible fi;
+				current = if empty then 1 else firstVisible + 1 fi;
 				total = if empty then 1 else totalCount fi;
 				setLabel current total;
-				buttonUp#setEnabled(current > 1);
-				buttonDown#setEnabled(current + visibleCount <= totalCount);
+				bu#setEnabled(current > 1);
+				bd#setEnabled(current + visibleCount <= totalCount);
 				(),
 			void onScrollStateChanged(android.widget.AbsListView v, int scrollState)
 				(),
