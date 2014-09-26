@@ -47,28 +47,26 @@ class PageSelectorView(Context context, AttributeSet attrs) extends LinearLayout
 		hlist / hitem |> int,
 	
 	void link(ListView list)
-		bu = buttonUp; // workaround for a bug in Yeti compiler resolving captures in below class
-		bd = buttonDown;
 		list#setOnScrollListener((class L extends android.widget.AbsListView$OnScrollListener
 			void onScroll(android.widget.AbsListView v, int firstVisible, int visibleCount, int totalCount)
 				empty = (visibleCount == 0) or (totalCount == 0);
 				current = if empty then 1 else firstVisible + 1 fi;
 				total = if empty then 1 else totalCount fi;
 				setLabel current total;
-				bu#setEnabled(current > 1);
-				bd#setEnabled(current + visibleCount <= totalCount);
+				buttonUp#setEnabled(current > 1);
+				buttonDown#setEnabled(current + visibleCount <= totalCount);
 				(),
 			void onScrollStateChanged(android.widget.AbsListView v, int scrollState)
 				(),
 			end; new L()));
-		setOnClickListener bd do v:
+		setOnClickListener buttonDown do v:
 			n = itemsOnPage list;
 			i = list#getFirstVisiblePosition() + n
 				|> min (list#getCount() - 1);
 			i = list#getLastVisiblePosition();
 			list#setSelectionFromTop(i, 0)
 		done;
-		setOnClickListener bu do v:
+		setOnClickListener buttonUp do v:
 			n = itemsOnPage list;
 			i = list#getFirstVisiblePosition() - n |> max 0;
 			list#setSelectionFromTop(i, 0)
