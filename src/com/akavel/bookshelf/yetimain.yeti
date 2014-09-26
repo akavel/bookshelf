@@ -5,33 +5,77 @@ import android.database.Cursor;
 import android.os.Bundle;
 import android.support.v4.app.FragmentActivity;
 import android.util.AttributeSet;
-import android.view.LayoutInflater;
+import android.view.Gravity;
 import android.view.Menu;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewGroup$LayoutParams;
 import android.widget.BaseAdapter;
 import android.widget.LinearLayout;
+import android.widget.LinearLayout$LayoutParams;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.R$style;
+import android.graphics.Typeface;
+import android.text.TextUtils$TruncateAt;
 
 load com.akavel.bookshelf.scanbooks;
 load com.akavel.bookshelf.layout;
 load com.akavel.utils;
 
+typedef layoutParam = Fixed number | FillParent () | WrapContent ();
+layoutParams w h is layoutParam -> layoutParam -> ~ViewGroup$LayoutParams = (
+	encode = \case of
+		FillParent (): ViewGroup$LayoutParams#FILL_PARENT;
+		WrapContent (): ViewGroup$LayoutParams#WRAP_CONTENT;
+		Fixed n: n
+		esac;
+	new ViewGroup$LayoutParams(encode w, encode h)
+	);
+
 class BookView(Book book, Context context, AttributeSet attrs) extends LinearLayout(context, attrs)
 	self _ = this,
-	setText id text is number -> string -> () = (viewById this id unsafely_as ~TextView)#setText(text),
 	
-	_ = (context#getSystemService(Context#LAYOUT_INFLATER_SERVICE) unsafely_as ~LayoutInflater)
-			#inflate(R$layout#layout_book, self ());
+	title = new TextView(context),
+	author = new TextView(context),
+	path = new TextView(context),
+
+	addField v gravity is ~TextView -> number -> () =
+		v#setLines(1);
+		v#setMaxLines(1);
+		v#setSingleLine();
+		lay = new LinearLayout$LayoutParams(layoutParams (WrapContent ()) (WrapContent ()));
+		margin = context#getResources()#getDimensionPixelSize(R$dimen#activity_horizontal_margin);
+		lay#setMargins(margin, 0, margin, 0);
+		lay#gravity := gravity;
+		this#addView(v, lay),
+	
+	layout _ =
+		this#setOrientation(LinearLayout#VERTICAL);
+		
+		title#setTextAppearance(context, R$style#TextAppearance_Large);
+		title#setTypeface(Typeface#DEFAULT_BOLD);
+		title#setEllipsize(TextUtils$TruncateAt#END);
+		addField title Gravity#LEFT;
+		
+		author#setTextAppearance(context, R$style#TextAppearance_Medium);
+		author#setEllipsize(TextUtils$TruncateAt#END);
+		addField author Gravity#LEFT;
+		
+		path#setTextAppearance(context, R$style#TextAppearance_Small);
+		path#setEllipsize(TextUtils$TruncateAt#START);
+		addField path Gravity#RIGHT;
+		(),
+	
+	_ = 
+		layout ();
 		(self ()) #update(book),
 
 	void update(Book book)
 		if not nullptr? book then
-			setText R$id#title book#title;
-			setText R$id#author book#author;
-			setText R$id#path book#path
+			title#setText(book#title);
+			author#setText(book#author);
+			path#setText(book#path);
 		fi,
 end;
 
@@ -99,9 +143,7 @@ class MainActivity extends FragmentActivity
 		pages1#link(lifted);
 		pages2#link(shelf);
 
-		layoutParams = new ViewGroup$LayoutParams(
-			ViewGroup$LayoutParams#FILL_PARENT, ViewGroup$LayoutParams#FILL_PARENT);
-		this#setContentView(layout, layoutParams);
+		this#setContentView(layout, layoutParams (FillParent ()) (FillParent ()));
 		
 		storage = new BooksStorage(this#getBaseContext());
 
