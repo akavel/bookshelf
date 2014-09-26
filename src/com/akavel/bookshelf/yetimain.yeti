@@ -34,8 +34,6 @@ layoutParams w h is layoutParam -> layoutParam -> ~ViewGroup$LayoutParams = (
 	);
 
 class BookView(Book book, Context context, AttributeSet attrs) extends LinearLayout(context, attrs)
-	self _ = this,
-	
 	title = new TextView(context),
 	author = new TextView(context),
 	path = new TextView(context),
@@ -67,16 +65,19 @@ class BookView(Book book, Context context, AttributeSet attrs) extends LinearLay
 		addField path Gravity#RIGHT;
 		(),
 	
-	_ = 
-		layout ();
-		(self ()) #update(book),
-
-	void update(Book book)
+	update book is ~Book -> () =
 		if not nullptr? book then
 			title#setText(book#title);
 			author#setText(book#author);
 			path#setText(book#path);
 		fi,
+
+	_ = 
+		layout ();
+		update book,
+
+	void update(Book book)
+		update book,
 end;
 
 
