@@ -37,32 +37,57 @@ class BookView(Book book, Context context, AttributeSet attrs) extends LinearLay
 	title = new TextView(context),
 	author = new TextView(context),
 	path = new TextView(context),
+	
+	subh = new LinearLayout(context),
+	subhv = new LinearLayout(context),
 
-	addField v gravity is ~TextView -> number -> () =
+	singleLineEllipsize v e is ~TextView -> 'a -> () =
 		v#setLines(1);
 		v#setMaxLines(1);
 		v#setSingleLine();
-		lay = new LinearLayout$LayoutParams(layoutParams (WrapContent ()) (WrapContent ()));
-		margin = context#getResources()#getDimensionPixelSize(R$dimen#activity_horizontal_margin);
-		lay#setMargins(margin, 0, margin, 0);
-		lay#gravity := gravity;
-		this#addView(v, lay),
+		v#setEllipsize(case e of
+			End (): TextUtils$TruncateAt#END;
+			Start (): TextUtils$TruncateAt#START
+			esac);
+		(),
 	
+	margin = context#getResources()
+		#getDimensionPixelSize(R$dimen#activity_horizontal_margin),
+
+	linearParams w h margin gravity =
+		param = new LinearLayout$LayoutParams(layoutParams w h);
+		param#setMargins(margin, 0, margin, 0);
+		param#gravity := gravity;
+		param,
+
 	layout _ =
 		this#setOrientation(LinearLayout#VERTICAL);
+		subh#setOrientation(LinearLayout#HORIZONTAL);
+		subhv#setOrientation(LinearLayout#VERTICAL);
 		
 		title#setTextAppearance(context, R$style#TextAppearance_Large);
 		title#setTypeface(Typeface#DEFAULT_BOLD);
 		title#setEllipsize(TextUtils$TruncateAt#END);
-		addField title Gravity#LEFT;
+		singleLineEllipsize title (End ());
 		
 		author#setTextAppearance(context, R$style#TextAppearance_Medium);
 		author#setEllipsize(TextUtils$TruncateAt#END);
-		addField author Gravity#LEFT;
+		singleLineEllipsize author (End ());
 		
 		path#setTextAppearance(context, R$style#TextAppearance_Small);
 		path#setEllipsize(TextUtils$TruncateAt#START);
-		addField path Gravity#RIGHT;
+		singleLineEllipsize path (Start ());
+		
+		this#addView(title,
+			linearParams (WrapContent ()) (WrapContent ()) margin Gravity#LEFT);
+		this#addView(subh,
+			linearParams (FillParent ()) (WrapContent ()) 0 Gravity#LEFT);
+		subh#addView(subhv,
+			linearParams (FillParent ()) (FillParent ()) 0 Gravity#TOP);
+		subhv#addView(author,
+			linearParams (WrapContent ()) (WrapContent ()) margin Gravity#LEFT);
+		subhv#addView(path,
+			linearParams (WrapContent ()) (WrapContent ()) margin Gravity#RIGHT);
 		(),
 	
 	update book is ~Book -> () =
