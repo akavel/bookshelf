@@ -11,6 +11,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewGroup$LayoutParams;
 import android.widget.BaseAdapter;
+import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.LinearLayout$LayoutParams;
 import android.widget.ListView;
@@ -37,6 +38,7 @@ class BookView(Book book, Context context, AttributeSet attrs) extends LinearLay
 	title = new TextView(context),
 	author = new TextView(context),
 	path = new TextView(context),
+	button = new Button(context),
 	
 	subh = new LinearLayout(context),
 	subhv = new LinearLayout(context),
@@ -78,12 +80,16 @@ class BookView(Book book, Context context, AttributeSet attrs) extends LinearLay
 		path#setEllipsize(TextUtils$TruncateAt#START);
 		singleLineEllipsize path (Start ());
 		
+		button#setText("(^)");
+		
 		this#addView(title,
 			linearParams (WrapContent ()) (WrapContent ()) margin Gravity#LEFT);
 		this#addView(subh,
 			linearParams (FillParent ()) (WrapContent ()) 0 Gravity#LEFT);
 		subh#addView(subhv,
-			linearParams (FillParent ()) (FillParent ()) 0 Gravity#TOP);
+			linearParams (WrapContent ()) (WrapContent ()) 0 Gravity#LEFT);
+		//subh#addView(button,
+		//	linearParams (WrapContent ()) (WrapContent ()) 0 Gravity#RIGHT);
 		subhv#addView(author,
 			linearParams (WrapContent ()) (WrapContent ()) margin Gravity#LEFT);
 		subhv#addView(path,
