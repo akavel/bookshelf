@@ -8,6 +8,7 @@ import android.util.AttributeSet;
 import android.view.Gravity;
 import android.view.Menu;
 import android.view.View;
+import android.view.View$OnClickListener;
 import android.view.ViewGroup;
 import android.view.ViewGroup$LayoutParams;
 import android.widget.BaseAdapter;
@@ -107,11 +108,25 @@ class BookView(Book book, Context context, AttributeSet attrs) extends LinearLay
 
 	void update(Book book)
 		update book,
+	
+	void setOnClickListener(View$OnClickListener l)
+		log.d "BookView" "setOnClickListener, book=\(title#getText())";
+		button#setOnClickListener(l),
 end;
 
+class OnBookListener
+	abstract void onBook(Book book)
+end;
+newBookListener l is (~Book -> ()) -> ~OnBookListener = (
+	class L extends OnBookListener
+		void onBook(Book book)
+			l book,
+	end; new L());
 
 class BooksDataAdapter(Cursor cursor) extends BaseAdapter
 	var cursor = cursor,
+	var bookListener = () unsafely_as ~OnBookListener,
+	
 	int getCount()
 		cursor#getCount(),
 	Object getItem(int pos)
@@ -130,11 +145,21 @@ class BooksDataAdapter(Cursor cursor) extends BaseAdapter
 		view = (convertView unsafely_as ~BookView);
 		if nullptr? book then
 			()
-		elif nullptr? view then
-			new BookView(book, parent#getContext(), ())
 		else
-			view#update(book);
-			view
+			v = if nullptr? view then
+				new BookView(book, parent#getContext(), ())
+			else
+				view#update(book);
+				view
+			fi;
+			v#setOnClickListener((class L extends View$OnClickListener
+				void onClick(View v)
+					log.d "BooksDataAdapter" "onClick, book=\(book), l=\(bookListener)";
+					if defined? bookListener then
+						bookListener#onBook(book)
+					fi
+				end; new L()));
+			v
 		fi,
 	int getViewTypeCount() 1,
 	boolean hasStableIds() true,
@@ -145,6 +170,9 @@ class BooksDataAdapter(Cursor cursor) extends BaseAdapter
 	
 	void requery()
 		_ = cursor#requery(),  //FIXME: this method is deprecated
+	void setOnBookListener(OnBookListener l)
+		log.d "BooksDataAdapter" "setOnBookListener \(l)";
+		bookListener := l,
 end;
 
 class MainActivity extends FragmentActivity
@@ -187,7 +215,20 @@ class MainActivity extends FragmentActivity
 		
 		tabs#addOnTabChangedListener((class L extends TabChoiceView$OnTabChangedListener
 			void onTabChanged(int i)
-				shelf#setAdapter(new BooksDataAdapter(storage#openCursor(i)))
+				shelf#setAdapter(new BooksDataAdapter(storage#openCursor(i)));
+				shelfAdapter#setOnBookListener(newBookListener do book:
+						log.d "ShelfListener" "book \(book) to -1";
+						storage#moveBook(book, -1);
+						lifted#invalidate();
+						shelf#invalidate()
+					done);
+				(lifted#getAdapter() unsafely_as ~BooksDataAdapter)
+					#setOnBookListener(newBookListener do book:
+						log.d "LiftedListener" "book \(book) to \(i)";
+						storage#moveBook(book, i);
+						lifted#invalidate();
+						shelf#invalidate()
+					done)
 			end;
 			new L()));
 		

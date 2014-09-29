@@ -59,6 +59,7 @@ class BooksStorage(Context context) extends SQLiteOpenHelper(context, "bookshelf
 		s = string(shelf);
 		//FIXME: as described in Android docs, don't use getReadableDatabase() in GUI thread
 		//FIXME: handle multithreaded access to DB somehow
+		//FIXME: close the cursor somehow, most probably
 		this#getReadableDatabase()#rawQuery("SELECT title, author, path, _id FROM shelves WHERE shelf=? ORDER BY title", [s]),
 
 	void merge(Book[] values)
@@ -91,4 +92,10 @@ class BooksStorage(Context context) extends SQLiteOpenHelper(context, "bookshelf
 			db#endTransaction();
 			db#close()
 		yrt,
+		
+	void moveBook(Book book, int shelf)
+		o x = x unsafely_as ~Object;
+		db = this#getWritableDatabase();
+		db#execSQL("UPDATE shelves SET shelf=? WHERE title=? AND author=? AND path=?",
+			[o shelf, o book#title, o book#author, o book#path]),
 end;
