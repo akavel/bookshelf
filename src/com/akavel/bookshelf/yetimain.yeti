@@ -87,23 +87,11 @@ class BookView(Book book, Context context, AttributeSet attrs) extends LinearLay
 		this#addView(sub,
 			linearParams (FillParent ()) (FillParent ()) margin Gravity#TOP);
 		sub#addView(title, mainLayoutParams (Fixed ()));
-		//this#addView(title,
-		//	linearParams (WrapContent ()) (WrapContent ()) margin Gravity#LEFT);
 		sub#addView(subh, mainLayoutParams (Fixed ()));
-		//this#addView(subh,
-		//	linearParams (FillParent ()) (WrapContent ()) 0 Gravity#LEFT);
 		subh#addView(subhv, mainLayoutParams (Shy ()));
 		subh#addView(button, mainLayoutParams (Fixed ()));
-		//subh#addView(subhv,
-		//	linearParams (WrapContent ()) (WrapContent ()) 0 Gravity#LEFT);
-		////subh#addView(button,
-		////	linearParams (WrapContent ()) (WrapContent ()) 0 Gravity#RIGHT);
 		subhv#addView(author, mainLayoutParams (Fixed ()));
-		//subhv#addView(author,
-		//	linearParams (WrapContent ()) (WrapContent ()) margin Gravity#LEFT);
 		subhv#addView(path, mainLayoutParams (Fixed ()));
-		//subhv#addView(path,
-		//	linearParams (WrapContent ()) (WrapContent ()) margin Gravity#RIGHT);
 		(),
 	
 	update book is ~Book -> () =
