@@ -148,19 +148,19 @@ class MainLayout(Context context, AttributeSet attrs) extends ViewGroup(context,
 	// Ask all children to measure themselves and compute the measurement of this
 	// layout based on the children.
 	void onMeasure(int widthMeasureSpec, int heightMeasureSpec)
-		log.d "MainLayout" "onMeasure, #children=\(this#getChildCount()) w=\(demode widthMeasureSpec) h=\(demode heightMeasureSpec)";
+		log.d "MainLayout" "onMeasure, #children=\(this#getChildCount()) w=\(demode widthMeasureSpec) h=\(demode heightMeasureSpec) orientation=\(orientation)";
 		//TODO: take into account our own getLayoutParams()
 		
 		case orientation of
 		Vertical ():
 			var maxW = 0;
 			doMeasure heightSpec v is measureSpec -> ~View -> () = (
-				log.d "MainLayout" "... measure(\(demode widthMeasureSpec),\(heightSpec))";
+				log.d "MainLayout \(this)" "... measure(\(demode widthMeasureSpec),\(heightSpec))";
 				v#measure(widthMeasureSpec, enmode heightSpec));
 			getMeasure v is ~View -> number = (
 				w = v#getMeasuredWidth();
 				h = v#getMeasuredHeight();
-				log.d "MainLayout" "... getMeasure(\(v#getClass())) = \(w),\(h)";
+				log.d "MainLayout \(this)" "... getMeasure(\(v#getClass())) = \(w),\(h)";
 				maxW := max maxW w;
 				h);
 			h = measure1d
@@ -173,11 +173,13 @@ class MainLayout(Context context, AttributeSet attrs) extends ViewGroup(context,
 				h);
 		_: // Horizontal ()
 			var maxH = 0;
-			doMeasure widthSpec v is measureSpec -> ~View -> () =
-				v#measure(enmode widthSpec, heightMeasureSpec);
+			doMeasure widthSpec v is measureSpec -> ~View -> () = (
+				log.d "MainLayout \(this)" "... measure(\(widthSpec),\(demode heightMeasureSpec))";
+				v#measure(enmode widthSpec, heightMeasureSpec));
 			getMeasure v is ~View -> number = (
 				w = v#getMeasuredWidth();
 				h = v#getMeasuredHeight();
+				log.d "MainLayout \(this)" "... getMeasure(\(v#getClass())) = \(w),\(h)";
 				maxH := max maxH h;
 				w);
 			w = measure1d
@@ -194,14 +196,27 @@ class MainLayout(Context context, AttributeSet attrs) extends ViewGroup(context,
 	// Position all children within this layout.
 	void onLayout(boolean changed, int left, int top, int right, int bottom)
 		log.d "MainLayout" "onLayout(left=\(left), top=\(top), right=\(right), bottom=\(bottom))";
-		_ = children this
-			|> filter visible
-			|> flip fold top do top child:
-				h = child |> getMeasure |> (.h);
-				bottom = top + h + 1;  // exclusive, I believe
-				child#layout(left, top, right, bottom);
-				bottom
-			done;
+		case orientation of
+		Vertical ():
+			_ = children this
+				|> filter visible
+				|> flip fold top do top child:
+					h = child |> getMeasure |> (.h);
+					bottom = top + h + 1;  // exclusive, I believe
+					child#layout(left, top, right, bottom);
+					bottom
+				done;
+		_: // Horizontal ()
+			_ = children this
+				|> filter visible
+				|> flip fold left do left child:
+					w = child |> getMeasure |> (.w);
+					right = left + w + 1;  // exclusive, I believe
+					log.d "MainLayout \(this)" "\(left) \(top) \(right) \(bottom)";
+					child#layout(left, top, right, bottom);
+					right
+				done
+		esac;
 		(),
 end;
 
