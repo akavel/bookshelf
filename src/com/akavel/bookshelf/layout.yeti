@@ -113,23 +113,37 @@ measure1d children measureSpec doMeasure getMeasure
 			|> filter ((shy ==) . shynessOf)
 			|> map2 (_ n child = {n, child}) (countdown nchildren)
 			|> flip fold pixels do pixels {n, child}:
-				size0 = child |> getMeasure;
-				slot = size0 + pixels / n |> how;
+				size0 = getMeasure child;
+				slot = size0 + pixels / n |> max 0 |> how;
 				doMeasure slot child;
 				delta = (getMeasure child) - size0;
 				pixels - delta
 			done;
 		excess = size - minSize;
 		log.d "MainLayout" "excess = \(excess), #greedy = \(nGreedy), #shy = \(nShy)";
-		leftovers =
-			excess
-			|> distribute nGreedy (Greedy ()) (AtMost)
-			|> distribute nShy (Shy ()) (Exactly);
-		size - leftovers
+		if excess >= 0 then
+			leftovers =
+				excess
+				|> distribute nGreedy (Greedy ()) (AtMost)
+				|> distribute nShy (Shy ()) (Exactly);
+			size - leftovers
+		else
+			// take from shy first, then from greedy
+			leftovers =
+				excess
+				|> distribute nShy (Shy ()) (AtMost)
+				|> distribute nGreedy (Greedy ()) (Exactly);
+			size - leftovers |> min size
+		fi
 	esac;
 	);
 
 class MainLayout(Context context, AttributeSet attrs) extends ViewGroup(context, attrs)
+	var orientation = Vertical (),
+	void setVertical()
+		orientation := Vertical (),
+	void setHorizontal()
+		orientation := Horizontal (),
 
 	// Ask all children to measure themselves and compute the measurement of this
 	// layout based on the children.
@@ -137,24 +151,44 @@ class MainLayout(Context context, AttributeSet attrs) extends ViewGroup(context,
 		log.d "MainLayout" "onMeasure, #children=\(this#getChildCount()) w=\(demode widthMeasureSpec) h=\(demode heightMeasureSpec)";
 		//TODO: take into account our own getLayoutParams()
 		
-		var maxW = 0;
-		doMeasure heightSpec v is measureSpec -> ~View -> () = (
-			log.d "MainLayout" "... measure(\(demode widthMeasureSpec),\(heightSpec))";
-			v#measure(widthMeasureSpec, enmode heightSpec));
-		getMeasure v is ~View -> number = (
-			w = v#getMeasuredWidth();
-			h = v#getMeasuredHeight();
-			log.d "MainLayout" "... getMeasure(\(v#getClass())) = \(w),\(h)";
-			maxW := max maxW w;
-			h);
-		h = measure1d
-			(children this |> filter visible)
-			(demode heightMeasureSpec)
-			doMeasure
-			getMeasure;
-		this#setMeasuredDimension(
-			View#resolveSize(maxW, widthMeasureSpec),
-			h);
+		case orientation of
+		Vertical ():
+			var maxW = 0;
+			doMeasure heightSpec v is measureSpec -> ~View -> () = (
+				log.d "MainLayout" "... measure(\(demode widthMeasureSpec),\(heightSpec))";
+				v#measure(widthMeasureSpec, enmode heightSpec));
+			getMeasure v is ~View -> number = (
+				w = v#getMeasuredWidth();
+				h = v#getMeasuredHeight();
+				log.d "MainLayout" "... getMeasure(\(v#getClass())) = \(w),\(h)";
+				maxW := max maxW w;
+				h);
+			h = measure1d
+				(children this |> filter visible)
+				(demode heightMeasureSpec)
+				doMeasure
+				getMeasure;
+			this#setMeasuredDimension(
+				View#resolveSize(maxW, widthMeasureSpec),
+				h);
+		_: // Horizontal ()
+			var maxH = 0;
+			doMeasure widthSpec v is measureSpec -> ~View -> () =
+				v#measure(enmode widthSpec, heightMeasureSpec);
+			getMeasure v is ~View -> number = (
+				w = v#getMeasuredWidth();
+				h = v#getMeasuredHeight();
+				maxH := max maxH h;
+				w);
+			w = measure1d
+				(children this |> filter visible)
+				(demode widthMeasureSpec)
+				doMeasure
+				getMeasure;
+			this#setMeasuredDimension(
+				w,
+				View#resolveSize(maxH, heightMeasureSpec))
+		esac;
 		(),
 		
 	// Position all children within this layout.

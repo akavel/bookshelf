@@ -39,9 +39,6 @@ class BookView(Book book, Context context, AttributeSet attrs) extends LinearLay
 	author = new TextView(context),
 	path = new TextView(context),
 	button = new Button(context),
-	
-	subh = new LinearLayout(context),
-	subhv = new LinearLayout(context),
 
 	singleLineEllipsize v e is ~TextView -> 'a -> () =
 		v#setLines(1);
@@ -63,8 +60,11 @@ class BookView(Book book, Context context, AttributeSet attrs) extends LinearLay
 		param,
 
 	layout _ =
+		subh = new MainLayout(context, ());
+		subhv = new LinearLayout(context);
+		
 		this#setOrientation(LinearLayout#VERTICAL);
-		subh#setOrientation(LinearLayout#HORIZONTAL);
+		subh#setHorizontal();
 		subhv#setOrientation(LinearLayout#VERTICAL);
 		
 		title#setTextAppearance(context, R$style#TextAppearance_Large);
@@ -86,10 +86,12 @@ class BookView(Book book, Context context, AttributeSet attrs) extends LinearLay
 			linearParams (WrapContent ()) (WrapContent ()) margin Gravity#LEFT);
 		this#addView(subh,
 			linearParams (FillParent ()) (WrapContent ()) 0 Gravity#LEFT);
-		subh#addView(subhv,
-			linearParams (WrapContent ()) (WrapContent ()) 0 Gravity#LEFT);
-		//subh#addView(button,
-		//	linearParams (WrapContent ()) (WrapContent ()) 0 Gravity#RIGHT);
+		subh#addView(subhv, mainLayoutParams (Shy ()));
+		subh#addView(button, mainLayoutParams (Fixed ()));
+		//subh#addView(subhv,
+		//	linearParams (WrapContent ()) (WrapContent ()) 0 Gravity#LEFT);
+		////subh#addView(button,
+		////	linearParams (WrapContent ()) (WrapContent ()) 0 Gravity#RIGHT);
 		subhv#addView(author,
 			linearParams (WrapContent ()) (WrapContent ()) margin Gravity#LEFT);
 		subhv#addView(path,
