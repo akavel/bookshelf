@@ -34,7 +34,7 @@ layoutParams w h is layoutParam -> layoutParam -> ~ViewGroup$LayoutParams = (
 	new ViewGroup$LayoutParams(encode w, encode h)
 	);
 
-class BookView(Book book, Context context, AttributeSet attrs) extends MainLayout(context, attrs)
+class BookView(Book book, Context context, AttributeSet attrs) extends LinearLayout(context, attrs)
 	title = new TextView(context),
 	author = new TextView(context),
 	path = new TextView(context),
@@ -60,10 +60,11 @@ class BookView(Book book, Context context, AttributeSet attrs) extends MainLayou
 		param,
 
 	layout _ =
+		sub = new MainLayout(context, ());
 		subh = new MainLayout(context, ());
 		subhv = new MainLayout(context, ());
 		
-		this#setVertical();
+		sub#setVertical();
 		subh#setHorizontal();
 		subhv#setVertical();
 		
@@ -78,14 +79,17 @@ class BookView(Book book, Context context, AttributeSet attrs) extends MainLayou
 		
 		path#setTextAppearance(context, R$style#TextAppearance_Small);
 		path#setEllipsize(TextUtils$TruncateAt#START);
+		path#setGravity(Gravity#RIGHT);
 		singleLineEllipsize path (Start ());
 		
 		button#setText("(^)");
 		
-		this#addView(title, mainLayoutParams (Fixed ()));
+		this#addView(sub,
+			linearParams (FillParent ()) (FillParent ()) margin Gravity#TOP);
+		sub#addView(title, mainLayoutParams (Fixed ()));
 		//this#addView(title,
 		//	linearParams (WrapContent ()) (WrapContent ()) margin Gravity#LEFT);
-		this#addView(subh, mainLayoutParams (Fixed ()));
+		sub#addView(subh, mainLayoutParams (Fixed ()));
 		//this#addView(subh,
 		//	linearParams (FillParent ()) (WrapContent ()) 0 Gravity#LEFT);
 		subh#addView(subhv, mainLayoutParams (Shy ()));
@@ -186,7 +190,7 @@ class MainActivity extends FragmentActivity
 		storage = new BooksStorage(this#getBaseContext());
 
 		shelfAdapter = new BooksDataAdapter(storage#openCursor(0));
-		//shelf#setAdapter(shelfAdapter);
+		shelf#setAdapter(shelfAdapter);
 		_ = (scanBooksTask this do progress:
 			shelfAdapter#requery();
 			shelfAdapter#notifyDataSetChanged();
