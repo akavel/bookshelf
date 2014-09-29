@@ -62,15 +62,6 @@ measure w h v is measureSpec -> measureSpec -> ~View -> {w is number, h is numbe
 // measureChildWithMargins(...) - given original ViewGroups measureSpecs, and internal "used space" inside ViewGroup, let child measure itself
 // child.layout(...)
 
-class MainLayout(Context context, AttributeSet attrs) extends ViewGroup(context, attrs)
-
-	// Ask all children to measure themselves and compute the measurement of this
-	// layout based on the children.
-	void onMeasure(int widthMeasureSpec, int heightMeasureSpec)
-		log.d "MainLayout" "onMeasure, #children=\(this#getChildCount()) w=\(demode widthMeasureSpec) h=\(demode heightMeasureSpec)";
-		
-		//TODO: take into account our own getLayoutParams()
-
 /*
 Notes:
 - if we're queried with Unspecified, we'd like to return "max h" and get it from our children;
@@ -84,67 +75,86 @@ In second pass, we need to re-measure all Greedy children to their final heights
 
 As to width, we can probably pass the measurespec transparently; then return either max of children (if Unspecified), or min(max of children, queried w) in remaining cases.
 */
+measure1d children measureSpec doMeasure getMeasure
+	is list<~View> -> measureSpec -> (measureSpec -> ~View -> ()) -> (~View -> number) -> number = (
+	// First pass: sum children's minimal sizes, so that we could calculate excess.
+	var minSize = 0;
+	var nGreedy = 0;
+	var nShy = 0;
+	for children do child:
+		log.d "MainLayout" " child";
+		doMeasure (Unspecified ()) child;
+		size = getMeasure child;
+		minSize := minSize + size;
 		
-		// First pass: sum children's minimal heights, so that we could calculate excess,
-		// and also find max over children's width, to have something to return.
+		shynessOf child |> \case of
+		Greedy (): nGreedy := nGreedy + 1;
+		Shy (): nShy := nShy + 1;
+		_: ()
+		esac
+	done;
+	
+	limitSize = case measureSpec of
+		AtMost n: Some n;
+		Exactly n: Some n;
+		Unspecified: None ()
+	esac;
+	
+	//FIXME: handle case where limitSize < minSize
+	
+	case limitSize of
+	None ():
+		minSize;
+	Some size:
+		countdown n =
+			iterate (_ x = x-1) n;
+		distribute nchildren shy how pixels =
+			children
+			|> filter ((shy ==) . shynessOf)
+			|> map2 (_ n child = {n, child}) (countdown nchildren)
+			|> flip fold pixels do pixels {n, child}:
+				size0 = child |> getMeasure;
+				slot = size0 + pixels / n |> how;
+				doMeasure slot child;
+				delta = (getMeasure child) - size0;
+				pixels - delta
+			done;
+		excess = size - minSize;
+		log.d "MainLayout" "excess = \(excess), #greedy = \(nGreedy), #shy = \(nShy)";
+		leftovers =
+			excess
+			|> distribute nGreedy (Greedy ()) (AtMost)
+			|> distribute nShy (Shy ()) (Exactly);
+		size - leftovers
+	esac;
+	);
+
+class MainLayout(Context context, AttributeSet attrs) extends ViewGroup(context, attrs)
+
+	// Ask all children to measure themselves and compute the measurement of this
+	// layout based on the children.
+	void onMeasure(int widthMeasureSpec, int heightMeasureSpec)
+		log.d "MainLayout" "onMeasure, #children=\(this#getChildCount()) w=\(demode widthMeasureSpec) h=\(demode heightMeasureSpec)";
+		//TODO: take into account our own getLayoutParams()
+		
 		var maxW = 0;
-		var minH = 0;
-		var nGreedy = 0;
-		var nShy = 0;
-		for (children this |> filter visible) do child:
-			log.d "MainLayout" " child";
-			
-			m = Unspecified ();
-			{w, h} = measure (demode widthMeasureSpec) m child;
-			log.d "MainLayout" "  \(m): \(w)x\(h)";
-			
+		doMeasure heightSpec v is measureSpec -> ~View -> () = (
+			log.d "MainLayout" "... measure(\(demode widthMeasureSpec),\(heightSpec))";
+			v#measure(widthMeasureSpec, enmode heightSpec));
+		getMeasure v is ~View -> number = (
+			w = v#getMeasuredWidth();
+			h = v#getMeasuredHeight();
+			log.d "MainLayout" "... getMeasure(\(v#getClass())) = \(w),\(h)";
 			maxW := max maxW w;
-			minH := minH + h;
-			
-			case (shynessOf child) of
-			Greedy (): nGreedy := nGreedy + 1;
-			Shy (): nShy := nShy + 1;
-			_: ()
-			esac
-		done;
-		
-		limitH = case (demode heightMeasureSpec) of
-			AtMost n: Some n;
-			Exactly n: Some n;
-			Unspecified: None ()
-		esac;
-		
-		//FIXME: handle case where limitH < minH
-		
-		case limitH of
-		None ():
-			this#setMeasuredDimension(
-				View#resolveSize(maxW, widthMeasureSpec),
-				minH);
-		Some h:
-			countdown n =
-				iterate (_ x = x-1) n;
-			distribute nchildren shy how pixels =
-				children this
-				|> filter visible
-				|> filter ((shy ==) . shynessOf)
-				|> map2 (_ n child = {n, child}) (countdown nchildren)
-				|> flip fold pixels do pixels {n, child}:
-					h0 = child |> getMeasure |> (.h);
-					slot = h0 + pixels / n |> how;
-					deltah = child |> measure (demode widthMeasureSpec) slot |> (.h) |> flip (-) h0;
-					pixels - deltah
-				done;
-			excess = h - minH;
-			log.d "MainLayout" "excess = \(excess), #greedy = \(nGreedy), #shy = \(nShy)";
-			leftovers =
-				excess
-				|> distribute nGreedy (Greedy ()) (AtMost)
-				|> distribute nShy (Shy ()) (Exactly);
-			this#setMeasuredDimension(
-				View#resolveSize(maxW, widthMeasureSpec),
-				h - leftovers)
-		esac;
+			h);
+		h = measure1d
+			(children this |> filter visible)
+			(demode heightMeasureSpec)
+			doMeasure
+			getMeasure;
+		this#setMeasuredDimension(
+			View#resolveSize(maxW, widthMeasureSpec),
+			h);
 		(),
 		
 	// Position all children within this layout.
