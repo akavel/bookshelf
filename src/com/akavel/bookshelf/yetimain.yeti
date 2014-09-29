@@ -110,7 +110,6 @@ class BookView(Book book, Context context, AttributeSet attrs) extends LinearLay
 		update book,
 	
 	void setOnClickListener(View$OnClickListener l)
-		log.d "BookView" "setOnClickListener, book=\(title#getText())";
 		button#setOnClickListener(l),
 end;
 
@@ -152,9 +151,9 @@ class BooksDataAdapter(Cursor cursor) extends BaseAdapter
 				view#update(book);
 				view
 			fi;
+			x = this;
 			v#setOnClickListener((class L extends View$OnClickListener
 				void onClick(View v)
-					log.d "BooksDataAdapter" "onClick, book=\(book), l=\(bookListener)";
 					if defined? bookListener then
 						bookListener#onBook(book)
 					fi
@@ -169,9 +168,9 @@ class BooksDataAdapter(Cursor cursor) extends BaseAdapter
 	boolean isEnabled(int pos) true,
 	
 	void requery()
-		_ = cursor#requery(),  //FIXME: this method is deprecated
+		_ = cursor#requery();  //FIXME: this method is deprecated
+		this#notifyDataSetChanged(),
 	void setOnBookListener(OnBookListener l)
-		log.d "BooksDataAdapter" "setOnBookListener \(l)";
 		bookListener := l,
 end;
 
@@ -209,30 +208,32 @@ class MainActivity extends FragmentActivity
 		shelf#setAdapter(shelfAdapter);
 		_ = (scanBooksTask this do progress:
 			shelfAdapter#requery();
-			shelfAdapter#notifyDataSetChanged();
 			this#setTitle("\(appName ()): scanned \(progress) book(s)")
 		done) #execute([]);
+		
+		setBookListener v shelfTo is ~ListView -> number -> () = (
+			adapter v is ~ListView -> ~BooksDataAdapter =
+				v#getAdapter() unsafely_as ~BooksDataAdapter;
+			(adapter v)#setOnBookListener(newBookListener do book:
+				log.d "ShelfListener" "book \(book) to \(shelfTo)";
+				storage#moveBook(book, shelfTo);
+				(adapter lifted)#requery();
+				(adapter shelf)#requery();
+				()
+			done));
 		
 		tabs#addOnTabChangedListener((class L extends TabChoiceView$OnTabChangedListener
 			void onTabChanged(int i)
 				shelf#setAdapter(new BooksDataAdapter(storage#openCursor(i)));
-				shelfAdapter#setOnBookListener(newBookListener do book:
-						log.d "ShelfListener" "book \(book) to -1";
-						storage#moveBook(book, -1);
-						lifted#invalidate();
-						shelf#invalidate()
-					done);
-				(lifted#getAdapter() unsafely_as ~BooksDataAdapter)
-					#setOnBookListener(newBookListener do book:
-						log.d "LiftedListener" "book \(book) to \(i)";
-						storage#moveBook(book, i);
-						lifted#invalidate();
-						shelf#invalidate()
-					done)
+				setBookListener shelf (0-1);
+				setBookListener lifted i,
 			end;
 			new L()));
 		
 		lifted#setAdapter(new BooksDataAdapter(storage#openCursor(-1)));
+		
+		setBookListener shelf (0-1);
+		setBookListener lifted 0;
 		
 		(),
 
