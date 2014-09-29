@@ -200,20 +200,21 @@ class MainLayout(Context context, AttributeSet attrs) extends ViewGroup(context,
 		Vertical ():
 			_ = children this
 				|> filter visible
-				|> flip fold top do top child:
+				|> flip fold 0 do top child:
 					h = child |> getMeasure |> (.h);
 					bottom = top + h + 1;  // exclusive, I believe
-					child#layout(left, top, right, bottom);
+					log.d "MainLayout \(this)" "V \(left) \(top) \(right) \(bottom) \(child)";
+					child#layout(0, top, right-left+1, bottom);
 					bottom
 				done;
 		_: // Horizontal ()
 			_ = children this
 				|> filter visible
-				|> flip fold left do left child:
+				|> flip fold 0 do left child:
 					w = child |> getMeasure |> (.w);
 					right = left + w + 1;  // exclusive, I believe
-					log.d "MainLayout \(this)" "\(left) \(top) \(right) \(bottom)";
-					child#layout(left, top, right, bottom);
+					log.d "MainLayout \(this)" "H \(left) \(top) \(right) \(bottom) \(child)";
+					child#layout(left, 0, right, bottom-top+1);
 					right
 				done
 		esac;
