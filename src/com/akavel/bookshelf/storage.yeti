@@ -11,6 +11,8 @@ import android.util.Log;
 currentVersion = 2;
 
 class BooksStorage(Context context) extends SQLiteOpenHelper(context, "bookshelf.db", (() unsafely_as ~SQLiteDatabase$CursorFactory), currentVersion)
+	sqlDateFormat = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss"),
+
 	void onCreate(SQLiteDatabase db)
 		this#onUpgrade(db, 0, currentVersion);
 		(),
@@ -102,6 +104,13 @@ class BooksStorage(Context context) extends SQLiteOpenHelper(context, "bookshelf
 			db#endTransaction();
 			db#close()
 		yrt,
+
+	void markOpened(Book book)
+		db = this#getWritableDatabase();
+		book#lastOpened := new java.util.Date();
+		dateString = sqlDateFormat#format(book#lastOpened);
+		db#execSQL("UPDATE shelves SET lastOpened=? WHERE title=? AND author=? AND path=?",
+			[dateString, book#title, book#author, book#path]),
 		
 	void moveBook(Book book, int shelf)
 		o x = x unsafely_as ~Object;
