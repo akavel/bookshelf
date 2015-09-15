@@ -170,6 +170,14 @@ extractMetadata path is string -> ~Book = (
 	);
 
 {
+	/*
+	 * FIXME(akavel):
+	 * - find files
+	 * -> get last modified date
+	 * -> if lastModifiedDate present in DB & equal, ignore the book
+	 * -> extract metadata
+	 * -> upsert to DB; if dbIsVirgin & db.book.lastOpened==0, set lastOpened=lastModified
+	 */
 	scanBooksTask context onProgressListener =
 		class ScanBooksTask extends AsyncTask
 			var progress = 0,

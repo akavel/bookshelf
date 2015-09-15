@@ -8,15 +8,9 @@ import android.database.sqlite.SQLiteDatabase$CursorFactory;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.util.Log;
 
-currentVersion = 1;
+currentVersion = 2;
 
-// FIXME: use CURRENT_VERSION instead of '1' below
 class BooksStorage(Context context) extends SQLiteOpenHelper(context, "bookshelf.db", (() unsafely_as ~SQLiteDatabase$CursorFactory), currentVersion)
-	titleField = "title",
-	authorField = "author",
-	pathField = "path",
-	shelvesTable = "shelves",
-	
 	void onCreate(SQLiteDatabase db)
 		this#onUpgrade(db, 0, currentVersion);
 		(),
@@ -25,7 +19,9 @@ class BooksStorage(Context context) extends SQLiteOpenHelper(context, "bookshelf
 		(oldv <= (targetv - 1)) and (targetv <= newv),
 	
 	void onUpgrade(SQLiteDatabase db, int oldv, int newv)
-		if targets oldv newv 1 then
+		_ = Log#d("Bookshelf", "entering DB onUpgrade \(oldv) => \(newv)");
+		targets = targets oldv newv;
+		if targets 1 then
 			db#execSQL(
 				"CREATE TABLE shelves (" ^
 				"	_id INT PRIMARY KEY," ^ // column name used by Android helper classes
@@ -36,14 +32,46 @@ class BooksStorage(Context context) extends SQLiteOpenHelper(context, "bookshelf
 				"	shelf INT DEFAULT 0" ^
 				");");
 			()
-		fi,
+		elif targets 2 then
+			// Change the type of 'lastOpened' column to DATETIME, add column 'fileModified' as DATETIME
+			try
+				db#beginTransaction();
+				db#execSQL(
+				"CREATE TABLE new_shelves (" ^
+				"	_id INT PRIMARY KEY," ^ // column name used by Android helper classes
+				"	title TEXT NOT NULL," ^
+				"	author TEXT NOT NULL," ^
+				"	path TEXT NOT NULL UNIQUE," ^
+				"	shelf INT DEFAULT 0," ^
+				"	lastOpened DATETIME," ^
+				"	fileModified DATETIME" ^
+				");");
+				db#execSQL(
+				"INSERT INTO new_shelves(_id, title, author, path, shelf) " ^
+				"	SELECT _id, title, author, path, shelf FROM shelves;");
+				db#execSQL(
+				"DROP TABLE shelves;");
+				db#execSQL(
+				"ALTER TABLE new_shelves RENAME TO shelves;");
+				_ = Log#e("Bookshelf", "SQL onUpgrade trx seems successful");
+				db#setTransactionSuccessful()
+			finally
+				db#endTransaction()
+			yrt
+		fi;
+		_ = Log#d("Bookshelf", "finished DB onUpgrade \(oldv) => \(newv)"),
 	
 	Cursor openCursor(int shelf)
 		s = string(shelf);
 		//FIXME: as described in Android docs, don't use getReadableDatabase() in GUI thread
 		//FIXME: handle multithreaded access to DB somehow
 		//FIXME: close the cursor somehow, most probably
-		this#getReadableDatabase()#rawQuery("SELECT title, author, path, _id FROM shelves WHERE shelf=? ORDER BY title", [s]),
+		db = this#getReadableDatabase();
+		if shelf == 0 then
+			db#rawQuery("SELECT title, author, path, _id FROM shelves WHERE shelf=0 ORDER BY lastOpened DESC, title", [])
+		else
+			db#rawQuery("SELECT title, author, path, _id FROM shelves WHERE shelf=? ORDER BY title", [s])
+		fi,
 
 	void merge(Book[] values)
 		db = this#getWritableDatabase();
@@ -52,20 +80,19 @@ class BooksStorage(Context context) extends SQLiteOpenHelper(context, "bookshelf
 			for values do book:
 				_ = Log#d("", "Adding \(book#path)");
 				data = new ContentValues();
-				data#put(authorField, book#author);
-				data#put(titleField, book#title);
-				data#put(pathField, book#path);
+				data#put("author", book#author);
+				data#put("title", book#title);
+				data#put("path", book#path);
 				
-				cur = db#rawQuery("SELECT * FROM \(shelvesTable) WHERE \(pathField) = ?",
-					[book#path]);
+				cur = db#rawQuery("SELECT * FROM shelves WHERE path = ?", [book#path]);
 				n = cur#getCount();
 				cur#close();
 				_ = Log#d("", " found \(n)");
 				
 				if n > 0 then
-					_ = db#update(shelvesTable, data, "\(pathField) = ?", [book#path])
+					_ = db#update("shelves", data, "path = ?", [book#path])
 				else
-					_ = db#insertOrThrow(shelvesTable, (), data)
+					_ = db#insertOrThrow("shelves", (), data)
 				fi;
 				()
 			done;

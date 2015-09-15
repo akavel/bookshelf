@@ -13,4 +13,5 @@ public class Book {
 	public String author;
 	public String path;
 	public Date lastOpened;
+	public Date fileModified;
 }
