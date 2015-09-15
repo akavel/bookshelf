@@ -11,3 +11,4 @@
  * `adb [-s $DEVICE_ID] shell pm uninstall -k com.package.$APP_NAME` - [FIXME: what is `-k`?]
    * or: `adb [-s $DEVICE_ID] uninstall com.package.$APP_NAME`
  * `adb push FILE /sdcard/` - upload FILE to emulator's sdcard
+ * `adb kill-server` - kill ADB daemon/service on the PC (for power-cycling)

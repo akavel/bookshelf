@@ -21,7 +21,8 @@ enmode measureSpec = case measureSpec of
 	Unspecified (): View$MeasureSpec#makeMeasureSpec(0, View$MeasureSpec#UNSPECIFIED)
 	esac;
 	
-visible v is ~View -> boolean = v#getVisibility() != ViewGroup#GONE;
+visible view =
+	(view is ~View)#getVisibility() != ViewGroup#GONE;
 
 typedef shyness = Greedy () | Fixed () | Shy ();
 
@@ -33,21 +34,21 @@ mainLayoutParams shy is shyness -> ~ViewGroup$LayoutParams =
 	new MainLayout$LayoutParams(shy as ~yeti.lang.Tag);
 shynessFromLayoutParams p is ~ViewGroup$LayoutParams -> shyness =
 	(p unsafely_as ~MainLayout$LayoutParams)#getTag() unsafely_as shyness;
-shynessOf v is ~View -> shyness =
-	shynessFromLayoutParams v#getLayoutParams();
+shynessOf view =
+	shynessFromLayoutParams (view is ~View)#getLayoutParams();
 
 children g is ~ViewGroup -> list<~View> = (
 	next i = if i >= g#getChildCount() then []
 		else g#getChildAt(i) :. \(next (i + 1)) fi;
 	next 0);
-getMeasure v is ~View -> {w is number, h is number} = (
-	result = { w = v#getMeasuredWidth(), h = v#getMeasuredHeight() };
+getMeasure view = (
+	result = { w = (view is ~View)#getMeasuredWidth(), h = view#getMeasuredHeight() };
 	//log.d "MainLayout" "... getMeasure(\(v#getClass())) = \(result)";
 	result);
-measure w h v is measureSpec -> measureSpec -> ~View -> {w is number, h is number} = (
-	//log.d "MainLayout" "... measure(\(w),\(h))";
-	v#measure(enmode w, enmode h);
-	getMeasure v);
+measure wSpec hSpec view = (
+	//log.d "MainLayout" "... measure(\(wSpec),\(hSpec))";
+	(view is ~View)#measure(enmode wSpec, enmode hSpec);
+	getMeasure view);
 
 // utils:
 // resolveSizeAndState(): given desired size, and external initial query, and "too small" flags from children, raises "too small" flag in result if necessary
@@ -75,13 +76,12 @@ In second pass, we need to re-measure all Greedy children to their final heights
 
 As to width, we can probably pass the measurespec transparently; then return either max of children (if Unspecified), or min(max of children, queried w) in remaining cases.
 */
-measure1d children measureSpec doMeasure getMeasure
-	is list<~View> -> measureSpec -> (measureSpec -> ~View -> ()) -> (~View -> number) -> number = (
+measure1d children measureSpec doMeasure getMeasure = (
 	// First pass: sum children's minimal sizes, so that we could calculate excess.
 	var minSize = 0;
 	var nGreedy = 0;
 	var nShy = 0;
-	for children do child:
+	for (children is list<~View>) do child:
 		//log.d "MainLayout" " child";
 		doMeasure (Unspecified ()) child;
 		size = getMeasure child;
@@ -154,13 +154,13 @@ class MainLayout(Context context, AttributeSet attrs) extends ViewGroup(context,
 		case orientation of
 		Vertical ():
 			var maxW = 0;
-			doMeasure heightSpec v is measureSpec -> ~View -> () = (
+			doMeasure heightSpec view = (
 				//log.d "MainLayout \(this)" "... measure(\(demode widthMeasureSpec),\(heightSpec))";
-				v#measure(widthMeasureSpec, enmode heightSpec));
-			getMeasure v is ~View -> number = (
-				w = v#getMeasuredWidth();
-				h = v#getMeasuredHeight();
-				//log.d "MainLayout \(this)" "... getMeasure(\(v#getClass())) = \(w),\(h)";
+				(view is ~View)#measure(widthMeasureSpec, enmode heightSpec));
+			getMeasure view = (
+				w = (view is ~View)#getMeasuredWidth();
+				h = view#getMeasuredHeight();
+				//log.d "MainLayout \(this)" "... getMeasure(\(view#getClass())) = \(w),\(h)";
 				maxW := max maxW w;
 				h);
 			h = measure1d
@@ -173,13 +173,13 @@ class MainLayout(Context context, AttributeSet attrs) extends ViewGroup(context,
 				h);
 		_: // Horizontal ()
 			var maxH = 0;
-			doMeasure widthSpec v is measureSpec -> ~View -> () = (
+			doMeasure widthSpec view = (
 				//log.d "MainLayout \(this)" "... measure(\(widthSpec),\(demode heightMeasureSpec))";
-				v#measure(enmode widthSpec, heightMeasureSpec));
-			getMeasure v is ~View -> number = (
-				w = v#getMeasuredWidth();
-				h = v#getMeasuredHeight();
-				//log.d "MainLayout \(this)" "... getMeasure(\(v#getClass())) = \(w),\(h)";
+				(view is ~View)#measure(enmode widthSpec, heightMeasureSpec));
+			getMeasure view = (
+				w = (view is ~View)#getMeasuredWidth();
+				h = view#getMeasuredHeight();
+				//log.d "MainLayout \(this)" "... getMeasure(\(view#getClass())) = \(w),\(h)";
 				maxH := max maxH h;
 				w);
 			w = measure1d

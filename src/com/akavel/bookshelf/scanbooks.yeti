@@ -90,8 +90,8 @@ zipOpen path is string -> {
 	files is () -> list<zipEntry>,
 } = (
 	zip = new ZipFile(new File(path));
-	entriesList entries is ~java.util.Enumeration -> list<zipEntry> =
-		if entries#hasMoreElements() then
+	entriesList entries =
+		if (entries is ~java.util.Enumeration)#hasMoreElements() then
 			entry = entries#nextElement() unsafely_as ~ZipArchiveEntry;
 			{
 				path = entry#getName(),
@@ -105,16 +105,16 @@ zipOpen path is string -> {
 		files () = entriesList zip#getEntries(),
 	});
 
-parseXml inputStream is ~InputStream -> ~org.w3c.dom.Document = (
+parseXml inputStream = (
 	doc = DocumentBuilderFactory
 		#newInstance()
 		#newDocumentBuilder()
-		#parse(inputStream);
+		#parse(inputStream is ~InputStream);
 	doc#normalize();
 	doc);
 
-initXPath namespaces dom is hash<string, string> -> ~org.w3c.dom.Document -> {get is string -> string} = (
-	ctx = JXPathContext#newContext(dom);
+initXPath namespaces dom = (
+	ctx = JXPathContext#newContext(dom is ~org.w3c.dom.Document);
 	forHash namespaces do k v:
 		ctx#registerNamespace(k, v)
 	done;

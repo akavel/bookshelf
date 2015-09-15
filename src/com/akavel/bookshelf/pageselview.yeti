@@ -12,9 +12,8 @@ import android.widget.TextView;
 load com.akavel.utils;
 
 // http://stackoverflow.com/a/2679284/98528
-getListItemView list
-	is ~ListView -> ~View =
-	list#getChildAt(list#getHeaderViewsCount());
+getListItemView list =
+	list#getChildAt((list is ~ListView)#getHeaderViewsCount());
 
 class PageSelectorView(Context context, AttributeSet attrs) extends LinearLayout(context, attrs)
 	var buttonUp is ~Button = () unsafely_as ~Button,
@@ -41,8 +40,8 @@ class PageSelectorView(Context context, AttributeSet attrs) extends LinearLayout
 		findViews ();
 		(),
 	
-	itemsOnPage list is ~ListView -> number =
-		hlist = list#getMeasuredHeight();
+	itemsOnPage list =
+		hlist = (list is ~ListView)#getMeasuredHeight();
 		hitem = (getListItemView list)#getMeasuredHeight(); //TODO: add divider height?
 		hlist / hitem |> int,
 	

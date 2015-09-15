@@ -46,11 +46,12 @@ class BookView(Book book, Context context, AttributeSet attrs) extends LinearLay
 	path = new TextView(context),
 	button = new Button(context),
 
-	singleLineEllipsize v e is ~TextView -> 'a -> () =
-		v#setLines(1);
-		v#setMaxLines(1);
-		v#setSingleLine();
-		v#setEllipsize(case e of
+	singleLineEllipsize view e
+		is ~TextView -> 'a -> () =
+		view#setLines(1);
+		view#setMaxLines(1);
+		view#setSingleLine();
+		view#setEllipsize(case e of
 			End (): TextUtils$TruncateAt#END;
 			Start (): TextUtils$TruncateAt#START
 			esac);
@@ -127,12 +128,13 @@ class OnBookListener
 	abstract void onBookButton(Book book),
 	abstract void onBookText(Book book)
 end;
-newBookListener b t is (~Book -> ()) -> (~Book -> ()) -> ~OnBookListener = (
+newBookListener onButton onText
+	is (~Book -> ()) -> (~Book -> ()) -> ~OnBookListener = (
 	class L extends OnBookListener
 		void onBookButton(Book book)
-			b book,
+			onButton book,
 		void onBookText(Book book)
-			t book,
+			onText book,
 	end; new L());
 
 class BooksDataAdapter(Cursor cursor) extends BaseAdapter
@@ -230,10 +232,11 @@ class MainActivity extends FragmentActivity
 			this#setTitle("\(appName ()): scanned \(progress) book(s)")
 		done) #execute([]);
 		
-		setBookListener v shelfTo is ~ListView -> number -> () = (
-			adapter v is ~ListView -> ~BooksDataAdapter =
-				v#getAdapter() unsafely_as ~BooksDataAdapter;
-			(adapter v)#setOnBookListener(newBookListener do book:
+		setBookListener view shelfTo
+			is ~ListView -> number -> () = (
+			adapter view =
+				(view is ~ListView)#getAdapter() unsafely_as ~BooksDataAdapter;
+			(adapter view)#setOnBookListener(newBookListener do book:
 				log.d "ShelfListener" "book \(book) to \(shelfTo)";
 				storage#moveBook(book, shelfTo);
 				(adapter lifted)#requery();

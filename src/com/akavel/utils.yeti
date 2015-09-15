@@ -10,19 +10,22 @@ load yeti.lang.io;
 	len array = map \1 array |> sum,
 	inList elem array = (-1 != index elem array),
 
-	basename path is string -> string = new java.io.File(path)#getName(),
+	basename path is string -> string =
+		new java.io.File(path)#getName(),
 
-	viewById obj id is ~android.view.View -> number -> ~View    = obj #findViewById(id),
+	viewById obj id =
+		(obj is ~View)#findViewById(id),
 	
-	setOnClickListener view listener is ~View -> (~View -> ()) -> () =
-		view#setOnClickListener((
+	setOnClickListener view listener =
+		(view is ~View)#setOnClickListener((
 			class Click extends View$OnClickListener
 				void onClick(View v)
 					listener v;
 			end;
 			new Click())),
 
-	iterateFilesRecursively dir is string -> list<string> = (
+	iterateFilesRecursively dir
+		is string -> list<string> = (
 		dirList = listDirectory false;
 		depthFirstSearch =
 			\case of
