@@ -7,11 +7,18 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteDatabase$CursorFactory;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.util.Log;
+import java.util.TimeZone;
+
+load com.akavel.utils;
+
+sqlDateFormat = (
+	f = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+	f#setTimeZone(TimeZone#getTimeZone("UTC"));
+	f);
 
 currentVersion = 2;
 
 class BooksStorage(Context context) extends SQLiteOpenHelper(context, "bookshelf.db", (() unsafely_as ~SQLiteDatabase$CursorFactory), currentVersion)
-	sqlDateFormat = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss"),
 
 	void onCreate(SQLiteDatabase db)
 		this#onUpgrade(db, 0, currentVersion);
@@ -85,6 +92,12 @@ class BooksStorage(Context context) extends SQLiteOpenHelper(context, "bookshelf
 				data#put("author", book#author);
 				data#put("title", book#title);
 				data#put("path", book#path);
+				if not nullptr? book#lastOpened then
+					data#put("lastOpened", sqlDateFormat#format(book#lastOpened))
+				fi;
+				if not nullptr? book#fileModified then
+					data#put("fileModified", sqlDateFormat#format(book#fileModified))
+				fi;
 				
 				cur = db#rawQuery("SELECT * FROM shelves WHERE path = ?", [book#path]);
 				n = cur#getCount();
@@ -103,6 +116,47 @@ class BooksStorage(Context context) extends SQLiteOpenHelper(context, "bookshelf
 		finally
 			db#endTransaction();
 			db#close()
+		yrt,
+
+	boolean isVirgin()
+		db = this#getReadableDatabase();
+		cur = db#rawQuery("SELECT COUNT(*) FROM shelves WHERE lastOpened NOT NULL", []);
+		_ = cur#moveToFirst();
+		n = cur#getInt(0);
+		cur#close();
+		log.d "Bookshelf" "non-virgin records: \(n)";
+		n == 0,
+
+	Book bookByPath(String path)
+		db = this#getReadableDatabase();
+		cur = db#rawQuery(
+			"SELECT " ^
+			"	title, " ^
+			"	author, " ^
+			"	DATETIME(lastOpened) as lastOpened, " ^
+			"	DATETIME(fileModified) as fileModified " ^
+			"FROM shelves WHERE path=?",
+			[path]);
+		try
+			if cur#getCount() == 0 then
+				() as ~Book
+			else
+				_ = cur#moveToFirst();
+				make name f = (
+					idx = cur#getColumnIndex(name);
+					s = cur#getString(idx);
+					if not cur#isNull(idx) then
+						f(s)
+					fi);
+				book = new Book(path);
+				make "title" do s: book#title := s done;
+				make "author" do s: book#author := s done;
+				make "lastOpened" do s: book#lastOpened := sqlDateFormat#parse(s) done;
+				make "fileModified" do s: book#fileModified := sqlDateFormat#parse(s) done;
+				book
+			fi
+		finally
+			cur#close()
 		yrt,
 
 	void markOpened(Book book)

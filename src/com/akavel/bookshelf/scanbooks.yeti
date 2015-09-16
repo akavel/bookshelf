@@ -122,11 +122,11 @@ initXPath namespaces dom = (
 		get = do xpath: ctx#getValue(xpath)#toString() done,
 	});
 
-extractMetadata path is string -> ~Book = (
-	log.d "ScanBooksTask" "extracting from zip: \(path)";
+loadMetadata book is ~Book -> ~Book = (
+	log.d "Bookshelf" "extracting from zip: \(book#path)";
 	
 	// find what's the path to the "content.opf" file
-	rootpath is string = withHandle (zipOpen path) do zip:
+	rootpath is string = withHandle (zipOpen book#path) do zip:
 		zip.files ()
 		|> filter do f: f.path == "META-INF/container.xml" done
 		|> map do f:
@@ -143,9 +143,7 @@ extractMetadata path is string -> ~Book = (
 		|> head
 	done;
 	
-	var title = "";
-	var author = "";
-	withHandle (zipOpen path) do zip:
+	withHandle (zipOpen book#path) do zip:
 		_ = zip.files ()
 		|> filter do f: f.path == rootpath done
 		|> take 1
@@ -156,28 +154,48 @@ extractMetadata path is string -> ~Book = (
 					|> parseXml
 					|> initXPath ["dc": "http://purl.org/dc/elements/1.1/"];
 				
-				title := xpath.get "//dc:title";
-				log.d "ScanBooksTask" "\(f.path) - title=\(title)";
+				book#title := xpath.get "//dc:title";
+				log.d "Bookshelf" "\(f.path) - title=\(book#title)";
 				
-				author := xpath.get "//dc:creator";
-				log.d "ScanBooksTask" "\(f.path) - author=\(author)";
+				book#author := xpath.get "//dc:creator";
+				log.d "Bookshelf" "\(f.path) - author=\(book#author)";
 			finally
 				stream#close()
 			yrt
 		done
 	done;
-	new Book(title, author, path)
+	book
 	);
 
+bookFromPath path = (
+	book = new Book(path);
+	f = new File(path);
+	if f#exists() then
+		book#fileModified := new java.util.Date(f#lastModified())
+	fi;
+	book);
+
+bookNeedsUpdate storage book
+	is ~BooksStorage -> ~Book -> boolean = (
+	virgin = storage#isVirgin();
+	var stored = storage#bookByPath(book#path);
+	if nullptr? stored then
+		stored := new Book(book#path)
+	fi;
+	skip = (nullptr? stored#fileModified and nullptr? book#fileModified) or
+		((not nullptr? stored#fileModified) and stored#fileModified == book#fileModified);
+	log.d "Bookshelf" "needs update? \(not skip) \(stored#fileModified) -> \(book#fileModified)";
+	if skip then
+		false
+	else
+		if (not virgin) and (nullptr? stored#lastOpened) then
+			book#lastOpened := book#fileModified;
+			log.d "Bookshelf" " updating lastOpened=\(book#lastOpened)"
+		fi;
+		true
+	fi);
+
 {
-	/*
-	 * FIXME(akavel):
-	 * - find files
-	 * -> get last modified date
-	 * -> if lastModifiedDate present in DB & equal, ignore the book
-	 * -> extract metadata
-	 * -> upsert to DB; if dbIsVirgin & db.book.lastOpened==0, set lastOpened=lastModified
-	 */
 	scanBooksTask context onProgressListener =
 		class ScanBooksTask extends AsyncTask
 			var progress = 0,
@@ -190,17 +208,20 @@ extractMetadata path is string -> ~Book = (
 				onProgressListener progress,
 			
 			Object doInBackground(Object[] args)
+				storage = new BooksStorage(context);
 				//TODO: detect if `storageDirectories` is empty, and maybe throw exception or something; maybe use "/" ?
 				_ = storageDirectories
 					|> map iterateFilesRecursively
 					|> concat
 					|> map (do path: log.i "ScanBooksTask" "file: \(path)"; path done)
 					|> filter (flip strEnds? ".epub")
-					|> map' do path:
+					|> map bookFromPath
+					|> filter (bookNeedsUpdate storage)
+					|> map' do book:
 						try
-							this#publishProgress([extractMetadata path])
-						catch Exception e:
-							_ = Log#e("ScanBooksTask", path, e)
+							this#publishProgress([loadMetadata book])
+						catch Exception ex:
+							log.ex "ScanBooksTask" book#path ex
 						yrt
 					done;
 				log.d "ScanBooksTask" "scanning finished.",

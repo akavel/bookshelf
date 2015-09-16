@@ -9,6 +9,10 @@ public class Book {
 		this.path = path;
 	}
 
+	public Book(String path) {
+		this.path = path;
+	}
+
 	public String title;
 	public String author;
 	public String path;

@@ -50,5 +50,6 @@ load yeti.lang.io;
 		d g s = _ = Log#d(g, s),
 		i g s = _ = Log#i(g, s),
 		e g s = _ = Log#e(g, s),
+		ex g s e = _ = Log#e(g, s, e),
 	},
 }
